@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import StudentForm from '../components/StudentForm';
-import IDCard from '../components/IDCard';
+import IDCardCanvas from '../components/IDCard/IDCardCanvas';
+import ElementToolbar from '../components/IDCard/ElementToolbar';
+import AIChat from '../components/AI/AIChat';
 import ThemeSelector from '../components/ThemeSelector';
 import ActionToolbar from '../components/ActionToolbar';
 import Footer from '../components/Footer';
@@ -10,8 +12,23 @@ import { CARD_THEMES } from '../data/themes';
 import { SAMPLE_STUDENTS } from '../data/sampleData';
 import { validateAllFields } from '../utils/validation';
 import { downloadCardAsImage, printCard } from '../utils/downloadCard';
-import { CheckCircle2, Sparkles, CreditCard, ArrowLeft } from 'lucide-react';
+import {
+  CheckCircle2,
+  Sparkles,
+  CreditCard,
+  ArrowLeft,
+  Undo2,
+  Redo2,
+  RotateCcw,
+  Layers,
+  Bot,
+  Sliders,
+  Move
+} from 'lucide-react';
 import ThemeToggle from '../components/ThemeToggle';
+import { getDefaultDesign } from '../state/defaultDesign';
+import { useDesignHistory } from '../utils/history';
+import { applyActionsToDesign } from '../utils/designActions';
 import '../App.css';
 
 const INITIAL_STUDENT_DATA = {
@@ -26,7 +43,8 @@ const INITIAL_STUDENT_DATA = {
   dob: '2003-08-14',
   bloodGroup: 'O+',
   address: 'Hyderabad, Telangana',
-  photoUrl: ''
+  photoUrl: '',
+  logoUrl: ''
 };
 
 const BLANK_STUDENT_DATA = {
@@ -41,18 +59,33 @@ const BLANK_STUDENT_DATA = {
   dob: '',
   bloodGroup: '',
   address: '',
-  photoUrl: ''
+  photoUrl: '',
+  logoUrl: ''
 };
 
 export default function CreateID() {
   const [studentData, setStudentData] = useState(INITIAL_STUDENT_DATA);
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
-  const [cardOrientation, setCardOrientation] = useState('vertical');
+  const [cardOrientation, setCardOrientation] = useState('horizontal');
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [toastMessage, setToastMessage] = useState(null);
+  const [selectedElementId, setSelectedElementId] = useState(null);
+  const [activeMobileTab, setActiveMobileTab] = useState('canvas'); // 'canvas', 'form', 'ai'
+  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
+
+  // Centralized Design State & Undo/Redo History
+  const {
+    design,
+    setDesign,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    resetDesign
+  } = useDesignHistory(getDefaultDesign('horizontal'));
 
   const cardRef = useRef(null);
 
@@ -63,6 +96,69 @@ export default function CreateID() {
     }, 3500);
   };
 
+  // Figma-style keyboard shortcuts when an element is selected
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't trigger shortcuts if user is typing in an input or textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+
+      if (!selectedElementId) return;
+
+      if (e.key === '[') {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+          handleReorderElement(selectedElementId, 'sendToBack');
+          showToast('Sent element to background (behind text)');
+        } else {
+          handleReorderElement(selectedElementId, 'sendBackward');
+        }
+      } else if (e.key === ']') {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey || e.altKey) {
+          handleReorderElement(selectedElementId, 'bringToFront');
+          showToast('Brought element to front');
+        } else {
+          handleReorderElement(selectedElementId, 'bringForward');
+        }
+      } else if (e.key === 'Escape') {
+        setSelectedElementId(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedElementId]);
+
+  // Sync orientation changes to design state
+  const handleOrientationChange = (newOrientation) => {
+    setCardOrientation(newOrientation);
+    const newDesign = getDefaultDesign(newOrientation);
+    // Keep active theme colors
+    newDesign.card.themeId = selectedTheme.id;
+    newDesign.card.headerBg = selectedTheme.headerBg;
+    newDesign.card.borderColor = selectedTheme.borderColor;
+    newDesign.card.accentColor = selectedTheme.accent;
+    resetDesign(newDesign);
+    showToast(`Switched to ${newOrientation} layout`);
+  };
+
+  // Sync theme changes to design state
+  const handleThemeChange = (newTheme) => {
+    setSelectedTheme(newTheme);
+    setDesign((current) => ({
+      ...current,
+      card: {
+        ...current.card,
+        themeId: newTheme.id,
+        headerBg: newTheme.headerBg,
+        borderColor: newTheme.borderColor,
+        accentColor: newTheme.accent
+      }
+    }), true);
+    showToast(`Applied ${newTheme.name} theme`);
+  };
+
+  // Form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setStudentData((prev) => ({
@@ -95,6 +191,22 @@ export default function CreateID() {
     showToast('Photograph removed');
   };
 
+  const handleLogoUpload = (dataUrl) => {
+    setStudentData((prev) => ({
+      ...prev,
+      logoUrl: dataUrl
+    }));
+    showToast('Institution logo updated');
+  };
+
+  const handleLogoRemove = () => {
+    setStudentData((prev) => ({
+      ...prev,
+      logoUrl: ''
+    }));
+    showToast('Institution logo removed');
+  };
+
   const handleLoadSample = () => {
     const randomIndex = Math.floor(Math.random() * SAMPLE_STUDENTS.length);
     const sample = SAMPLE_STUDENTS[randomIndex];
@@ -104,12 +216,139 @@ export default function CreateID() {
     showToast(`Loaded sample profile for ${sample.fullName}`);
   };
 
-  const handleReset = () => {
+  const handleResetForm = () => {
     if (window.confirm('Are you sure you want to reset all form fields?')) {
       setStudentData(BLANK_STUDENT_DATA);
       setFormErrors({});
       setIsGenerated(false);
       showToast('Form reset to blank');
+    }
+  };
+
+  // Reset entire design layout to default
+  const handleResetDesign = () => {
+    if (window.confirm('Reset ID card visual design to initial default layout?')) {
+      resetDesign(getDefaultDesign(cardOrientation));
+      setSelectedElementId(null);
+      showToast('Design layout reset to default');
+    }
+  };
+
+  // Handle single element update (from drag or element toolbar)
+  const handleUpdateElement = (id, updates, commitToHistory = true) => {
+    setDesign((current) => {
+      if (!current.elements[id]) return current;
+      return {
+        ...current,
+        elements: {
+          ...current.elements,
+          [id]: {
+            ...current.elements[id],
+            ...updates
+          }
+        }
+      };
+    }, commitToHistory);
+  };
+
+  // Handle direct text updates to student data from canvas editor
+  const handleUpdateStudentField = (field, value) => {
+    setStudentData((prev) => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Handle layer reordering (bring to front, etc.)
+  const handleReorderElement = (id, direction) => {
+    setDesign((current) => {
+      const actions = [{ type: 'reorder', element: id, direction }];
+      return applyActionsToDesign(current, actions);
+    }, true);
+  };
+
+  // Toggle lock state
+  const handleToggleLock = (id) => {
+    setDesign((current) => {
+      if (!current.elements[id]) return current;
+      const locked = !current.elements[id].locked;
+      return {
+        ...current,
+        elements: {
+          ...current.elements,
+          [id]: {
+            ...current.elements[id],
+            locked
+          }
+        }
+      };
+    }, true);
+  };
+
+  // Hide element
+  const handleHideElement = (id) => {
+    setDesign((current) => {
+      if (!current.elements[id]) return current;
+      return {
+        ...current,
+        elements: {
+          ...current.elements,
+          [id]: {
+            ...current.elements[id],
+            visible: false
+          }
+        }
+      };
+    }, true);
+    setSelectedElementId(null);
+    showToast('Element hidden. You can ask AI to restore it.');
+  };
+
+  // Apply actions from AI Chatbot
+  const handleApplyAiActions = (actions, message) => {
+    setDesign((current) => applyActionsToDesign(current, actions), true);
+    showToast(message || 'AI design changes applied!');
+  };
+
+  // Focus matching form field when element is double-clicked on canvas
+  const handleFocusField = (elementId) => {
+    if (elementId === 'studentPhoto') {
+      const photoInput =
+        document.querySelector('.photo-upload-zone input[type="file"]') ||
+        document.querySelector('input[type="file"][accept*="image"]');
+      if (photoInput) {
+        photoInput.click();
+        return;
+      }
+    }
+
+    if (elementId === 'collegeEmblem' || elementId === 'collegeLogo') {
+      const logoInput = document.querySelector('.logo-upload-zone input[type="file"]');
+      if (logoInput) {
+        logoInput.click();
+        return;
+      }
+    }
+
+    const fieldMapping = {
+      studentName: 'fullName',
+      rollNumber: 'rollNumber',
+      collegeName: 'collegeName',
+      branch: 'branch',
+      email: 'email',
+      phone: 'phone',
+      address: 'address',
+      dob: 'dob',
+      bloodGroup: 'bloodGroup'
+    };
+
+    const targetFieldName = fieldMapping[elementId];
+    if (targetFieldName) {
+      const input = document.querySelector(`[name="${targetFieldName}"]`);
+      if (input) {
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     }
   };
 
@@ -123,12 +362,7 @@ export default function CreateID() {
 
     setFormErrors({});
     setIsGenerated(true);
-    showToast('ID Card generated successfully!');
-
-    const previewEl = document.getElementById('card-preview-container');
-    if (previewEl && window.innerWidth < 1024) {
-      previewEl.scrollIntoView({ behavior: 'smooth' });
-    }
+    showToast('ID Card verified successfully!');
   };
 
   const handleDownload = async () => {
@@ -137,7 +371,10 @@ export default function CreateID() {
       await new Promise((r) => setTimeout(r, 400));
     }
 
+    // Deselect element prior to snapshot
+    setSelectedElementId(null);
     setIsDownloading(true);
+
     try {
       const fileName = `${(studentData.fullName || 'student').toLowerCase().replace(/\s+/g, '-')}-id-card.png`;
       await downloadCardAsImage(cardRef.current, fileName);
@@ -151,27 +388,29 @@ export default function CreateID() {
   };
 
   const handlePrint = () => {
+    setSelectedElementId(null);
     printCard();
   };
 
   return (
-    <div className="digital-id-app">
+    <div className="digital-id-app min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* Top Creation Header Bar */}
-      <header className="navbar-container">
-        <div className="navbar-inner">
-          <Link to="/" className="brand-logo">
-            <div className="logo-icon-wrap">
-              <CreditCard className="logo-icon" size={22} />
+      <header className="navbar-container sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
+        <div className="navbar-inner max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+          <Link to="/" className="brand-logo flex items-center gap-2">
+            <div className="logo-icon-wrap p-2 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
+              <CreditCard className="logo-icon" size={20} />
             </div>
-            <span className="brand-text">
-              Digital<span className="brand-accent">ID</span>
+            <span className="brand-text font-black text-lg tracking-tight text-slate-900 dark:text-white">
+              Digital<span className="brand-accent text-blue-600 dark:text-blue-400">ID</span>
+              <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                AI STUDIO
+              </span>
             </span>
           </Link>
 
-          <div className="navbar-actions">
-            {/* Dark / Light Mode Toggle Button beside Back to Overview */}
+          <div className="navbar-actions flex items-center gap-3">
             <ThemeToggle />
-
             <Link to="/" className="btn btn-outline btn-sm back-to-overview-btn">
               <ArrowLeft size={16} />
               <span className="back-btn-text">Back to Overview</span>
@@ -180,90 +419,206 @@ export default function CreateID() {
         </div>
       </header>
 
-      <main>
-        {/* Main ID Generator Section */}
-        <section id="generator" className="generator-section">
-          <div className="section-container">
-            <div className="section-header text-center">
-              <div className="section-subtitle-pill">
-                <Sparkles size={14} />
-                <span>Identity Studio</span>
-              </div>
-              <h1 className="section-title">Create Your Digital College ID</h1>
-              <p className="section-desc">
-                Fill in student academic credentials on the left and see the credential render instantaneously on the right.
-              </p>
+      {/* Main Studio Workspace */}
+      <main className="flex-1 max-w-[1720px] w-full mx-auto p-3 sm:p-5 lg:p-6">
+        {/* Mobile Tab Switcher */}
+        <div className="lg:hidden flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl mb-4 text-xs font-semibold">
+          <button
+            type="button"
+            onClick={() => setActiveMobileTab('canvas')}
+            className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition ${
+              activeMobileTab === 'canvas' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <Move size={14} />
+            <span>ID Canvas</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMobileTab('form')}
+            className={`flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition ${
+              activeMobileTab === 'form' ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-slate-600 dark:text-slate-400'
+            }`}
+          >
+            <Sliders size={14} />
+            <span>Student Form</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAiChatOpen(true)}
+            className="flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition text-blue-600 dark:text-blue-400 font-bold"
+          >
+            <Bot size={14} />
+            <span>AI Assistant</span>
+          </button>
+        </div>
+
+        {/* 2-Column Laptop-Friendly Studio Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* ================= LEFT COLUMN: Student Credentials Form & Theming (lg:col-span-5 xl:col-span-4) ================= */}
+          <div
+            className={`lg:col-span-5 xl:col-span-4 space-y-5 ${
+              activeMobileTab === 'form' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            <StudentForm
+              formData={studentData}
+              errors={formErrors}
+              onChange={handleInputChange}
+              onPhotoUpload={handlePhotoUpload}
+              onPhotoRemove={handlePhotoRemove}
+              onLogoUpload={handleLogoUpload}
+              onLogoRemove={handleLogoRemove}
+              onLoadSample={handleLoadSample}
+              onReset={handleResetForm}
+            />
+
+            {/* Theme Selector */}
+            <ThemeSelector
+              selectedTheme={selectedTheme}
+              onThemeChange={handleThemeChange}
+              orientation={cardOrientation}
+              onOrientationChange={handleOrientationChange}
+              isFlipped={isFlipped}
+              onToggleFlip={() => setIsFlipped(!isFlipped)}
+            />
+
+            {/* Actions Toolbar */}
+            <ActionToolbar
+              onGenerate={handleGenerate}
+              onDownload={handleDownload}
+              onPrint={handlePrint}
+              onFlip={() => setIsFlipped(!isFlipped)}
+              isFlipped={isFlipped}
+              isGenerated={isGenerated}
+              isDownloading={isDownloading}
+              hasValidationErrors={Object.keys(formErrors).length > 0}
+            />
+          </div>
+
+          {/* ================= RIGHT COLUMN: Interactive ID Card Canvas (lg:col-span-7 xl:col-span-8) ================= */}
+          <div
+            className={`lg:col-span-7 xl:col-span-8 flex flex-col items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative min-h-[640px] ${
+              activeMobileTab === 'canvas' ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            {/* Contextual Canvas Editor Bar (Active element properties or studio navigation) */}
+            <ElementToolbar
+              element={design?.elements && selectedElementId ? design.elements[selectedElementId] : null}
+              studentData={studentData}
+              onUpdateStudentField={handleUpdateStudentField}
+              onUpdateStyle={(id, styles) => handleUpdateElement(id, styles, true)}
+              onReorder={handleReorderElement}
+              onToggleLock={handleToggleLock}
+              onHide={handleHideElement}
+              onDeselect={() => setSelectedElementId(null)}
+              onPhotoUpload={handlePhotoUpload}
+              onLogoUpload={handleLogoUpload}
+              cardOrientation={cardOrientation}
+              onOrientationChange={handleOrientationChange}
+              isFlipped={isFlipped}
+              onToggleFlip={() => setIsFlipped(!isFlipped)}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onUndo={undo}
+              onRedo={redo}
+              onResetDesign={handleResetDesign}
+            />
+
+            {/* Center Canvas Area */}
+            <div className="flex-1 w-full flex flex-col items-center justify-center overflow-hidden py-2">
+              <IDCardCanvas
+                ref={cardRef}
+                student={studentData}
+                design={design}
+                selectedElementId={selectedElementId}
+                onSelectElement={setSelectedElementId}
+                onUpdateElement={handleUpdateElement}
+                onReorderElement={handleReorderElement}
+                onToggleLock={handleToggleLock}
+                onHideElement={handleHideElement}
+                isFlipped={isFlipped}
+                isExportMode={isDownloading}
+                onFocusField={handleFocusField}
+                onPhotoUpload={handlePhotoUpload}
+                onLogoUpload={handleLogoUpload}
+                onUpdateStudentField={handleUpdateStudentField}
+              />
             </div>
 
-            <div className="generator-layout">
-              {/* Left Column: Student Information Form */}
-              <div className="generator-form-col">
-                <StudentForm
-                  formData={studentData}
-                  errors={formErrors}
-                  onChange={handleInputChange}
-                  onPhotoUpload={handlePhotoUpload}
-                  onPhotoRemove={handlePhotoRemove}
-                  onLoadSample={handleLoadSample}
-                  onReset={handleReset}
-                />
+            {/* Design Hint Footer */}
+            <div className="w-full pt-3 mt-auto border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={13} className="text-amber-500 shrink-0" />
+                <span>
+                  <strong>ProTip:</strong> Click any element to drag, resize, or style. Double-click to focus field. Use [ and ] to adjust layers.
+                </span>
               </div>
-
-              {/* Right Column: Live ID Preview & Controls */}
-              <div id="card-preview-container" className="generator-preview-panel">
-                <div className="preview-panel-header">
-                  <h3 className="preview-title">
-                    <CreditCard size={20} />
-                    <span>Live ID Preview</span>
-                  </h3>
-                  <div className="live-indicator">
-                    <span className="live-dot"></span>
-                    <span>REALTIME SYNC</span>
-                  </div>
-                </div>
-
-                {/* Live ID Card Component */}
-                <IDCard
-                  ref={cardRef}
-                  student={studentData}
-                  theme={selectedTheme}
-                  orientation={cardOrientation}
-                  isFlipped={isFlipped}
-                />
-
-                {/* Theme & Orientation Customizer */}
-                <ThemeSelector
-                  selectedTheme={selectedTheme}
-                  onThemeChange={setSelectedTheme}
-                  orientation={cardOrientation}
-                  onOrientationChange={setCardOrientation}
-                  isFlipped={isFlipped}
-                  onToggleFlip={() => setIsFlipped(!isFlipped)}
-                />
-
-                {/* Actions Toolbar */}
-                <ActionToolbar
-                  onGenerate={handleGenerate}
-                  onDownload={handleDownload}
-                  onPrint={handlePrint}
-                  onFlip={() => setIsFlipped(!isFlipped)}
-                  isFlipped={isFlipped}
-                  isGenerated={isGenerated}
-                  isDownloading={isDownloading}
-                  hasValidationErrors={Object.keys(formErrors).length > 0}
-                />
-              </div>
+              <span className="font-mono text-[10px] text-slate-400">
+                {cardOrientation === 'horizontal' ? '600 × 380 px' : '380 × 600 px'}
+              </span>
             </div>
           </div>
-        </section>
+        </div>
       </main>
 
       <Footer />
 
+      {/* Floating AI Chatbot Button & Window (Bottom Right) */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+        {/* Floating AI Chat Window Popover */}
+        {isAiChatOpen && (
+          <div className="mb-3 w-[420px] max-w-[calc(100vw-2rem)] h-[620px] max-h-[82vh] shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col animate-in slide-in-from-bottom-5 fade-in duration-200">
+            <AIChat
+              currentDesign={design}
+              onApplyActions={handleApplyAiActions}
+              onResetDesign={handleResetDesign}
+              onClose={() => setIsAiChatOpen(false)}
+              onImageAttached={(role, dataUrl) => {
+                if (role === 'photo') {
+                  handlePhotoUpload(dataUrl);
+                  showToast('Student photograph added to ID card!');
+                } else if (role === 'logo') {
+                  handleLogoUpload(dataUrl);
+                  showToast('Institution logo added to ID card!');
+                }
+              }}
+              onUpdateStudentData={(updates) => {
+                if (updates && Object.keys(updates).length > 0) {
+                  setStudentData((prev) => ({ ...prev, ...updates }));
+                  showToast(`Updated profile details with AI`);
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* The Floating Launcher Button */}
+        <button
+          type="button"
+          onClick={() => setIsAiChatOpen(!isAiChatOpen)}
+          className={`group flex items-center gap-2.5 px-4 py-3 rounded-full font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-200 border cursor-pointer ${
+            isAiChatOpen
+              ? 'bg-slate-900 dark:bg-slate-800 text-white border-slate-700 hover:bg-slate-800'
+              : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white border-blue-400/40 hover:scale-105 active:scale-95 shadow-blue-500/25'
+          }`}
+          title={isAiChatOpen ? 'Close AI Assistant' : 'Open AI Design Assistant'}
+        >
+          <div className="relative">
+            <Sparkles size={18} className={isAiChatOpen ? '' : 'animate-spin duration-3000'} />
+            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
+            </span>
+          </div>
+          <span>{isAiChatOpen ? 'Close AI' : '✨ Ask AI Designer'}</span>
+        </button>
+      </div>
+
       {/* Toast Notification Alert */}
       {toastMessage && (
         <div className="toast-container" role="status">
-          <CheckCircle2 size={18} className="toast-icon" />
+          <CheckCircle2 size={18} className="toast-icon text-emerald-500" />
           <span>{toastMessage}</span>
         </div>
       )}

@@ -2305,38 +2305,89 @@
     grid-template-columns: 1fr;
   }
 
+  /* Preserved Authentic Card Dimensions with Fluid Proportional Scaling */
+  .id-card-perspective-container {
+    overflow: visible;
+  }
+
   .id-card-root:not(.id-card-export) {
-    width: 290px;
+    transform-origin: top center;
   }
 
-  .id-card-root.horizontal:not(.id-card-export) {
-    width: 100%;
-    max-width: 340px;
-    height: auto;
-    min-height: 480px;
+  /* Vertical Card scale on narrow screens */
+  @media (max-width: 360px) {
+    .id-card-root:not(.horizontal):not(.id-card-export) {
+      scale: 0.85;
+      margin-bottom: calc(520px * (0.85 - 1));
+    }
   }
 
-  .id-card-root.horizontal:not(.id-card-export) .body-horizontal {
-    flex-direction: column;
+  /* Horizontal Card scale on mobile & tablet without distorting layout */
+  @media (max-width: 600px) {
+    .id-card-root.horizontal:not(.id-card-export) {
+      scale: 0.92;
+      margin-bottom: calc(330px * (0.92 - 1));
+    }
   }
 
-  .id-card-root.horizontal:not(.id-card-export) .horizontal-qr-sign-col {
-    width: 100%;
-    flex-direction: row;
-    border-left: none;
-    border-top: 1px dashed rgba(15, 23, 42, 0.15);
-    padding-top: 0.5rem;
-    padding-left: 0;
+  @media (max-width: 520px) {
+    .id-card-root.horizontal:not(.id-card-export) {
+      scale: 0.78;
+      margin-bottom: calc(330px * (0.78 - 1));
+    }
   }
 
-  .horizontal-back-body {
-    grid-template-columns: 1fr;
+  @media (max-width: 420px) {
+    .id-card-root.horizontal:not(.id-card-export) {
+      scale: 0.65;
+      margin-bottom: calc(330px * (0.65 - 1));
+    }
+  }
+
+  @media (max-width: 360px) {
+    .id-card-root.horizontal:not(.id-card-export) {
+      scale: 0.54;
+      margin-bottom: calc(330px * (0.54 - 1));
+    }
   }
 
   .footer-bottom-bar {
     flex-direction: column;
     gap: 0.75rem;
     text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-inner {
+    padding: 0.75rem 1rem;
+  }
+
+  .navbar-actions {
+    gap: 0.5rem;
+  }
+
+  .back-to-overview-btn {
+    padding: 0.4rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  .theme-toggle-btn .theme-toggle-text {
+    display: none;
+  }
+
+  .theme-toggle-btn {
+    padding: 0.45rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .student-form-card {
+    padding: 1.25rem 0.875rem;
+  }
+
+  .action-toolbar-card {
+    padding: 1rem 0.875rem;
   }
 }
 

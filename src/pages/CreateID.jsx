@@ -172,9 +172,9 @@ export default function CreateID() {
             {/* Dark / Light Mode Toggle Button beside Back to Overview */}
             <ThemeToggle />
 
-            <Link to="/" className="btn btn-outline btn-sm">
+            <Link to="/" className="btn btn-outline btn-sm back-to-overview-btn">
               <ArrowLeft size={16} />
-              <span>Back to Overview</span>
+              <span className="back-btn-text">Back to Overview</span>
             </Link>
           </div>
         </div>

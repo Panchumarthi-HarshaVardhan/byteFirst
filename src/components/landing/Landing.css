@@ -19,7 +19,8 @@
   width: 100%;
   max-width: 1240px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-inline: clamp(1rem, 3.5vw, 1.5rem);
+  box-sizing: border-box;
 }
 
 /* --------------------------------------------------------------------------
@@ -58,10 +59,12 @@
 .landing-nav-inner {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 1rem 1.5rem;
+  padding: 0.875rem clamp(1rem, 3.5vw, 1.5rem);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .landing-brand {
@@ -434,6 +437,16 @@
   z-index: 1;
 }
 
+/* Responsive Scale Wrapper */
+.showcase-card-scale-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform-origin: center center;
+  transition: transform 0.3s ease;
+  width: 100%;
+}
+
 /* Decoupled Gentle Floating Rig */
 .showcase-floating-rig {
   position: relative;
@@ -493,6 +506,14 @@
   transform-style: preserve-3d;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
+}
+
+.showcase-card-3d-flipper.is-dragging {
+  transition: none !important;
+}
+
+.showcase-card-3d-flipper.is-settling {
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 .card-glare-overlay {
@@ -1032,6 +1053,14 @@
   border-color: #7dd3fc;
   color: #0284c7;
   transform: translateY(-1px);
+}
+
+.ctrl-pill-btn svg {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ctrl-pill-btn .rotate-flipped {
+  transform: rotate(180deg);
 }
 
 .showcase-interaction-hint {
@@ -1740,10 +1769,12 @@
 
   .trust-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
   }
 
   .features-showcase-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
   }
 
   .security-inner-grid {
@@ -1763,10 +1794,13 @@
   .steps-cards-row {
     grid-template-columns: 1fr;
     gap: 1.5rem;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
   .footer-layout {
     grid-template-columns: 1fr;
+    gap: 2.5rem;
   }
 }
 
@@ -1783,20 +1817,20 @@
     display: block;
   }
 
+  .floating-badge-element {
+    display: none; /* Peripheral badges hidden on mobile/tablet to eliminate side overflow */
+  }
+
   .hero-headline {
-    font-size: 2.75rem;
+    font-size: clamp(2.2rem, 6.5vw, 3rem);
   }
 
-  .trust-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .features-showcase-grid {
-    grid-template-columns: 1fr;
+  .final-cta-card {
+    padding: 3.5rem 1.5rem;
   }
 
   .final-cta-heading {
-    font-size: 2rem;
+    font-size: clamp(1.75rem, 5vw, 2.25rem);
   }
 
   .footer-bottom-row {
@@ -1806,28 +1840,101 @@
   }
 }
 
-@media (max-width: 390px) {
-  .hero-headline {
-    font-size: 2.25rem;
-  }
-
-  .showcase-card-3d-flipper {
-    width: 280px;
-    height: 440px;
-  }
-
-  .floating-badge-element {
+@media (max-width: 640px) {
+  .nav-cta-desktop {
     display: none;
+  }
+
+  .trust-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .features-showcase-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-tile {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .step-flow-card {
+    padding: 1.5rem 1.25rem;
   }
 
   .hero-action-buttons {
     flex-direction: column;
     width: 100%;
+    max-width: 360px;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 0.75rem;
   }
 
-  .hero-primary-btn, .hero-secondary-btn {
+  .hero-primary-btn, 
+  .hero-secondary-btn {
     width: 100%;
     justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .footer-nav-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .theme-toggle-btn .theme-toggle-text {
+    display: none;
+  }
+
+  .theme-toggle-btn {
+    padding: 0.45rem;
+  }
+
+  .showcase-3d-stage {
+    height: 440px;
+  }
+
+  .showcase-card-scale-wrapper {
+    transform: scale(0.9);
+  }
+
+  .final-cta-card {
+    padding: 2.75rem 1.25rem;
+  }
+
+  .final-cta-primary-btn {
+    width: 100%;
+    max-width: 290px;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero-headline {
+    font-size: 2rem;
+  }
+
+  .showcase-3d-stage {
+    height: 400px;
+  }
+
+  .showcase-card-scale-wrapper {
+    transform: scale(0.82);
+  }
+
+  .stylized-scanner-card {
+    max-width: 270px;
+    height: 290px;
+  }
+
+  .footer-nav-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 }
 

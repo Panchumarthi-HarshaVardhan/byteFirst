@@ -61,7 +61,7 @@ export default function LandingNavbar() {
 
           <button
             type="button"
-            className="landing-btn-cta"
+            className="landing-btn-cta nav-cta-desktop"
             onClick={() => navigate('/create')}
           >
             <span>Create Your ID</span>

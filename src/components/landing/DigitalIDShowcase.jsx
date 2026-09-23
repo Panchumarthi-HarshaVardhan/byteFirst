@@ -1,32 +1,182 @@
-import React, { useState, useRef } from 'react';
-import { CreditCard, ShieldCheck, QrCode, RotateCw, MapPin, Phone, Calendar, Heart } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { CreditCard, ShieldCheck, QrCode, RotateCw, Pause, Play, MapPin, Phone, Calendar, Heart } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function DigitalIDShowcase() {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [glarePos, setGlarePos] = useState({ x: 50, y: 30 });
+  const [rotY, setRotY] = useState(0);
+  const [rotX, setRotX] = useState(0);
+  const [osc, setOsc] = useState({ x: 0, y: 0 });
+  const [hoverTilt, setHoverTilt] = useState({ x: 0, y: 0 });
+  const [isAutoRotating, setIsAutoRotating] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [isSettling, setIsSettling] = useState(false);
+  const [glarePos, setGlarePos] = useState({ x: 50, y: 30 });
+
   const stageRef = useRef(null);
+  const autoTimeRef = useRef(0);
+  const pointerDownRef = useRef(null);
+  const settleTimeoutRef = useRef(null);
 
-  // Subtle, smooth mouse tilt interaction (-5deg to +5deg conceptual range)
+  // Determine which side is facing the user (for controls and cues)
+  const normalizedY = ((Math.round(rotY) % 360) + 360) % 360;
+  const isBackSide = (normalizedY > 90 && normalizedY < 270) || (Math.abs(Math.round(rotY / 180)) % 2 !== 0);
+
+  // 1. Subtle, slow automatic 3D oscillation (gentle organic breathing, readable at all times)
+  useEffect(() => {
+    if (!isAutoRotating || isDragging || isSettling) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    let animId;
+    let lastTime = performance.now();
+
+    const loop = (now) => {
+      const delta = (now - lastTime) / 1000;
+      lastTime = now;
+      autoTimeRef.current += delta;
+
+      // Slow, elegant oscillation (approx 8.5 deg left-center-right sway)
+      const oscY = Math.sin(autoTimeRef.current * 0.85) * 8.5;
+      const oscX = Math.cos(autoTimeRef.current * 0.65) * 3;
+      setOsc({ x: oscX, y: oscY });
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [isAutoRotating, isDragging, isSettling]);
+
+  // Clean up timers on unmount
+  useEffect(() => {
+    return () => {
+      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+    };
+  }, []);
+
+  // 2. Flip 180 degrees between front and back
+  const flipToOppositeSide = useCallback(() => {
+    if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+
+    const norm = ((Math.round(rotY) % 360) + 360) % 360;
+    const currentlyBack = (norm > 90 && norm < 270) || (Math.abs(Math.round(rotY / 180)) % 2 !== 0);
+
+    // Calculate target angle to reach opposite side
+    const target = currentlyBack
+      ? Math.round(rotY / 360) * 360
+      : Math.floor(rotY / 360) * 360 + 180;
+
+    setIsSettling(true);
+    setRotY(target);
+    setRotX(0);
+    setHoverTilt({ x: 0, y: 0 });
+    setOsc({ x: 0, y: 0 });
+    autoTimeRef.current = 0;
+
+    settleTimeoutRef.current = setTimeout(() => {
+      setIsSettling(false);
+    }, 550);
+  }, [rotY]);
+
+  // 3. Pointer Drag and Click Detection
+  const handlePointerDown = (e) => {
+    if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+
+    pointerDownRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startRotY: rotY,
+      startRotX: rotX,
+      startTime: Date.now(),
+      hasMoved: false
+    };
+
+    setIsSettling(false);
+  };
+
   const handlePointerMove = (e) => {
-    if (!stageRef.current) return;
-    if (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (pointerDownRef.current) {
+      // User is holding pointer down
+      const dx = e.clientX - pointerDownRef.current.startX;
+      const dy = e.clientY - pointerDownRef.current.startY;
+      const dist = Math.hypot(dx, dy);
 
-    const rect = stageRef.current.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
-    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+      if (dist > 6) {
+        if (!pointerDownRef.current.hasMoved) {
+          pointerDownRef.current.hasMoved = true;
+          setIsDragging(true);
+        }
 
-    // Keep rotation range strictly within -5deg to +5deg for maximum readability
-    const targetTiltY = Math.max(-5, Math.min(5, nx * 10));
-    const targetTiltX = Math.max(-5, Math.min(5, -ny * 10));
+        const isMobile = typeof window !== 'undefined' && window.innerWidth <= 600;
+        const factorY = isMobile ? 0.55 : 0.7;
+        const factorX = isMobile ? 0.25 : 0.35;
 
-    setTilt({ x: targetTiltX, y: targetTiltY });
-    setGlarePos({
-      x: Math.min(100, Math.max(0, 50 + nx * 40)),
-      y: Math.min(100, Math.max(0, 30 + ny * 40))
-    });
+        const nextRotY = pointerDownRef.current.startRotY + dx * factorY;
+        const nextRotX = Math.max(-22, Math.min(22, pointerDownRef.current.startRotX - dy * factorX));
+
+        setRotY(nextRotY);
+        setRotX(nextRotX);
+
+        setGlarePos({
+          x: Math.min(100, Math.max(0, 50 + (dx * 0.15))),
+          y: Math.min(100, Math.max(0, 30 + (dy * 0.15)))
+        });
+      }
+    } else {
+      // User is hovering with pointer (Desktop mouse)
+      if (typeof window !== 'undefined' && (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+      if (!stageRef.current) return;
+
+      const rect = stageRef.current.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+      const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
+
+      // Subtle hover tilt (approx -7 to +7 deg)
+      setHoverTilt({
+        y: isBackSide ? -nx * 14 : nx * 14,
+        x: -ny * 8
+      });
+
+      setGlarePos({
+        x: Math.min(100, Math.max(0, 50 + nx * 50)),
+        y: Math.min(100, Math.max(0, 30 + ny * 50))
+      });
+    }
+  };
+
+  const handlePointerUp = (e) => {
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch (_) {}
+
+    if (pointerDownRef.current) {
+      const { hasMoved } = pointerDownRef.current;
+      pointerDownRef.current = null;
+
+      if (!hasMoved) {
+        // Treat as direct CLICK / TAP on card -> FLIP front <-> back
+        flipToOppositeSide();
+      } else {
+        // User dragged card -> Settle smoothly to nearest natural orientation (0 or 180 deg)
+        setIsDragging(false);
+        setIsSettling(true);
+
+        const nearest180 = Math.round(rotY / 180) * 180;
+        setRotY(nearest180);
+        setRotX(0);
+        setHoverTilt({ x: 0, y: 0 });
+        setOsc({ x: 0, y: 0 });
+        autoTimeRef.current = 0;
+
+        settleTimeoutRef.current = setTimeout(() => {
+          setIsSettling(false);
+        }, 550);
+      }
+    }
   };
 
   const handlePointerEnter = () => {
@@ -35,30 +185,41 @@ export default function DigitalIDShowcase() {
 
   const handlePointerLeave = () => {
     setIsHovered(false);
-    setTilt({ x: 0, y: 0 });
+    setHoverTilt({ x: 0, y: 0 });
     setGlarePos({ x: 50, y: 30 });
+    if (pointerDownRef.current) {
+      handlePointerUp({ currentTarget: stageRef.current });
+    }
   };
 
-  const handleFlip = () => {
-    setIsFlipped((prev) => !prev);
+  const toggleAutoRotate = () => {
+    setIsAutoRotating((prev) => !prev);
   };
 
-  const currentRotY = isFlipped ? 180 - tilt.y : tilt.y;
-  const currentRotX = tilt.x;
+  // Combine rot + dynamic hover/oscillation
+  const effectiveRotY = rotY + (isDragging || isSettling ? 0 : isHovered ? hoverTilt.y : (isAutoRotating ? osc.y : 0));
+  const effectiveRotX = rotX + (isDragging || isSettling ? 0 : isHovered ? hoverTilt.x : (isAutoRotating ? osc.x : 0));
 
   // Multi-layered depth parallax for floating peripheral elements
-  const badge1Parallax = `translate3d(${tilt.y * 1.4}px, ${-tilt.x * 1.4}px, 0)`;
-  const badge2Parallax = `translate3d(${-tilt.y * 1.1}px, ${tilt.x * 1.1}px, 0)`;
-  const badge3Parallax = `translate3d(${tilt.y * 0.9}px, ${tilt.x * 0.9}px, 0)`;
+  const currentTiltY = isHovered ? hoverTilt.y : (isAutoRotating ? osc.y : 0);
+  const currentTiltX = isHovered ? hoverTilt.x : (isAutoRotating ? osc.x : 0);
+  const badge1Parallax = `translate3d(${currentTiltY * 1.2}px, ${-currentTiltX * 1.2}px, 0)`;
+  const badge2Parallax = `translate3d(${-currentTiltY * 0.9}px, ${currentTiltX * 0.9}px, 0)`;
+  const badge3Parallax = `translate3d(${currentTiltY * 0.7}px, ${currentTiltX * 0.7}px, 0)`;
 
   return (
     <div className="showcase-3d-stage-wrapper">
       <div
         ref={stageRef}
-        className={`showcase-3d-stage ${isHovered ? 'is-hovered' : ''}`}
+        className={`showcase-3d-stage ${isDragging ? 'is-dragging' : ''} ${isHovered ? 'is-hovered' : ''}`}
+        onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
+        role="region"
+        aria-label="Interactive 3D Digital ID Card Preview. Drag to rotate in 3D, click to flip front and back."
       >
         {/* Subtle Ambient Sky Lighting with organic breath */}
         <div className="showcase-stage-ambient"></div>
@@ -106,18 +267,27 @@ export default function DigitalIDShowcase() {
           <span className="qr-mini-tag">QUICK SCAN</span>
         </div>
 
-        {/* Floating Rig providing subtle, continuous up-down floating over 5 seconds */}
-        <div className="showcase-floating-rig">
-          {/* Soft Dynamic Drop Shadow */}
-          <div className="showcase-card-shadow" aria-hidden="true"></div>
+        {/* Responsive Scale Wrapper ensuring flawless mobile fit */}
+        <div className="showcase-card-scale-wrapper">
+          {/* Floating Rig providing subtle, continuous up-down floating over 5 seconds */}
+          <div className="showcase-floating-rig">
+            {/* Soft Dynamic Drop Shadow */}
+            <div className="showcase-card-shadow" aria-hidden="true"></div>
 
           {/* ========================================================
               3D CARD FLIPPER (Front and Back Faces with Smooth Tilt)
               ======================================================== */}
           <div
-            className={`showcase-card-3d-flipper ${isHovered ? 'is-hovered' : ''} ${isFlipped ? 'is-flipped' : ''}`}
+            className={`showcase-card-3d-flipper ${isDragging ? 'is-dragging' : ''} ${isSettling ? 'is-settling' : ''}`}
             style={{
-              transform: `perspective(1200px) rotateY(${currentRotY}deg) rotateX(${currentRotX}deg)`
+              transform: `perspective(1200px) rotateY(${effectiveRotY}deg) rotateX(${effectiveRotX}deg)`,
+              transition: isDragging
+                ? 'none'
+                : isSettling
+                ? 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)'
+                : isHovered
+                ? 'transform 0.15s ease-out'
+                : 'transform 0.1s linear'
             }}
           >
             {/* Dynamic Light Sheen Overlay */}
@@ -315,22 +485,33 @@ export default function DigitalIDShowcase() {
         </div>
       </div>
     </div>
+  </div>
 
-      {/* Interactive 3D Flip Controls */}
+      {/* Interactive 3D Controls Bar */}
       <div className="showcase-controls-bar">
         <button
           type="button"
           className="ctrl-pill-btn"
-          onClick={handleFlip}
-          title={isFlipped ? "Flip to view front side" : "Flip to view back side"}
+          onClick={flipToOppositeSide}
+          title={isBackSide ? "Flip to view front side" : "Flip to view back side"}
         >
-          <RotateCw size={13} className={isFlipped ? "rotate-flipped" : ""} />
-          <span>{isFlipped ? 'View Front Side' : 'View Back Side'}</span>
+          <RotateCw size={13} className={isBackSide ? "rotate-flipped" : ""} />
+          <span>{isBackSide ? 'View Front Side' : 'View Back Side'}</span>
+        </button>
+
+        <button
+          type="button"
+          className="ctrl-pill-btn"
+          onClick={toggleAutoRotate}
+          title={isAutoRotating ? 'Pause auto-rotation' : 'Resume auto-rotation'}
+        >
+          {isAutoRotating ? <Pause size={13} /> : <Play size={13} />}
+          <span>{isAutoRotating ? 'Auto-Rotate ON' : 'Auto-Rotate PAUSED'}</span>
         </button>
       </div>
 
       <div className="showcase-interaction-hint">
-        <span>💡 Move mouse over card to inspect in 3D</span>
+        <span>💡 Drag or click card to inspect both sides in 3D</span>
       </div>
     </div>
   );

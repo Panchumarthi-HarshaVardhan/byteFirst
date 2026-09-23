@@ -5,6 +5,14 @@ import DigitalIDShowcase from './DigitalIDShowcase';
 
 export default function LandingHero() {
   const navigate = useNavigate();
+  const [glowOffset, setGlowOffset] = React.useState({ x: 0, y: 0 });
+
+  const handlePointerMove = (e) => {
+    if (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const nx = (e.clientX / window.innerWidth - 0.5) * 2;
+    const ny = (e.clientY / window.innerHeight - 0.5) * 2;
+    setGlowOffset({ x: nx, y: ny });
+  };
 
   const scrollToFeatures = (e) => {
     e.preventDefault();
@@ -15,11 +23,17 @@ export default function LandingHero() {
   };
 
   return (
-    <section id="hero" className="landing-hero-section">
-      {/* Background Ambience: Faint Grid, Subtle Blue/Indigo Glow */}
+    <section id="hero" className="landing-hero-section" onPointerMove={handlePointerMove}>
+      {/* Background Ambience: Faint Grid, Subtle Blue/Indigo Glow with Soft Parallax */}
       <div className="hero-grid-pattern"></div>
-      <div className="hero-radial-glow-primary"></div>
-      <div className="hero-radial-glow-secondary"></div>
+      <div
+        className="hero-radial-glow-primary"
+        style={{ transform: `translate3d(${glowOffset.x * 12}px, ${glowOffset.y * 12}px, 0)` }}
+      ></div>
+      <div
+        className="hero-radial-glow-secondary"
+        style={{ transform: `translate3d(${-glowOffset.x * 8}px, ${-glowOffset.y * 8}px, 0)` }}
+      ></div>
 
       <div className="landing-container hero-inner-grid">
         {/* Left Column: Hero Text & CTAs */}

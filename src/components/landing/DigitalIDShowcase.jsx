@@ -1,94 +1,73 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { CreditCard, ShieldCheck, QrCode, RotateCw, Pause, Play, MapPin, Phone, Calendar, Heart } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { CreditCard, ShieldCheck, QrCode, RotateCw, MapPin, Phone, Calendar, Heart } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function DigitalIDShowcase() {
-  const [rotY, setRotY] = useState(15);
-  const [rotX, setRotX] = useState(-5);
-  const [isAutoRotating, setIsAutoRotating] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glarePos, setGlarePos] = useState({ x: 50, y: 30 });
+  const [isHovered, setIsHovered] = useState(false);
+  const stageRef = useRef(null);
 
-  const dragStartRef = useRef({ x: 0, y: 0, initialRotY: 0, initialRotX: 0 });
-  const animFrameRef = useRef(null);
-
-  // Continuous auto-rotation around itself in 3D
-  useEffect(() => {
-    if (!isAutoRotating || isDragging) return;
-
-    let lastTime = performance.now();
-    const animate = (currentTime) => {
-      const delta = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
-
-      setRotY((prev) => (prev + delta * 28) % 360);
-      animFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animFrameRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [isAutoRotating, isDragging]);
-
-  // Pointer drag controls (mouse & touch)
-  const handlePointerDown = (e) => {
-    setIsDragging(true);
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      initialRotY: rotY,
-      initialRotX: rotX
-    };
-  };
-
+  // Subtle, smooth mouse tilt interaction (-5deg to +5deg conceptual range)
   const handlePointerMove = (e) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
+    if (!stageRef.current) return;
+    if (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    setRotY((dragStartRef.current.initialRotY + deltaX * 0.75) % 360);
-    // Constrain pitch to -25 to +25 deg for realistic perspective
-    const newRotX = Math.max(-25, Math.min(25, dragStartRef.current.initialRotX - deltaY * 0.4));
-    setRotX(newRotX);
+    const rect = stageRef.current.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width - 0.5; // -0.5 to 0.5
+    const ny = (e.clientY - rect.top) / rect.height - 0.5; // -0.5 to 0.5
 
-    // Update light glare position
+    // Keep rotation range strictly within -5deg to +5deg for maximum readability
+    const targetTiltY = Math.max(-5, Math.min(5, nx * 10));
+    const targetTiltX = Math.max(-5, Math.min(5, -ny * 10));
+
+    setTilt({ x: targetTiltX, y: targetTiltY });
     setGlarePos({
-      x: Math.min(100, Math.max(0, 50 + deltaX * 0.2)),
-      y: Math.min(100, Math.max(0, 30 + deltaY * 0.2))
+      x: Math.min(100, Math.max(0, 50 + nx * 40)),
+      y: Math.min(100, Math.max(0, 30 + ny * 40))
     });
   };
 
-  const handlePointerUp = () => {
-    setIsDragging(false);
+  const handlePointerEnter = () => {
+    setIsHovered(true);
   };
 
-  // Quick 180° flip to back or front
-  const handleFlip180 = () => {
-    setIsAutoRotating(false);
-    setRotY((prev) => (prev + 180) % 360);
+  const handlePointerLeave = () => {
+    setIsHovered(false);
+    setTilt({ x: 0, y: 0 });
+    setGlarePos({ x: 50, y: 30 });
   };
 
-  const toggleAutoRotate = () => {
-    setIsAutoRotating((prev) => !prev);
+  const handleFlip = () => {
+    setIsFlipped((prev) => !prev);
   };
 
-  // Determine which side is facing user (for label indicator)
-  const normalizedY = ((rotY % 360) + 360) % 360;
-  const isBackSide = normalizedY > 90 && normalizedY < 270;
+  const currentRotY = isFlipped ? 180 - tilt.y : tilt.y;
+  const currentRotX = tilt.x;
+
+  // Multi-layered depth parallax for floating peripheral elements
+  const badge1Parallax = `translate3d(${tilt.y * 1.4}px, ${-tilt.x * 1.4}px, 0)`;
+  const badge2Parallax = `translate3d(${-tilt.y * 1.1}px, ${tilt.x * 1.1}px, 0)`;
+  const badge3Parallax = `translate3d(${tilt.y * 0.9}px, ${tilt.x * 0.9}px, 0)`;
 
   return (
     <div className="showcase-3d-stage-wrapper">
       <div
-        className={`showcase-3d-stage ${isDragging ? 'is-dragging' : ''}`}
-        onPointerDown={handlePointerDown}
+        ref={stageRef}
+        className={`showcase-3d-stage ${isHovered ? 'is-hovered' : ''}`}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
-        {/* Subtle Ambient Sky Lighting */}
+        {/* Subtle Ambient Sky Lighting with organic breath */}
         <div className="showcase-stage-ambient"></div>
 
         {/* Floating Peripheral Element 1: Realistic Student Credential Badge */}
-        <div className="floating-badge-element badge-verification">
+        <div
+          className="floating-badge-element badge-verification"
+          style={{ transform: badge1Parallax }}
+        >
           <div className="badge-icon-wrap">
             <ShieldCheck size={16} className="badge-check-icon" />
           </div>
@@ -99,7 +78,10 @@ export default function DigitalIDShowcase() {
         </div>
 
         {/* Floating Peripheral Element 2: Small Campus Meta Panel */}
-        <div className="floating-badge-element badge-metadata">
+        <div
+          className="floating-badge-element badge-metadata"
+          style={{ transform: badge2Parallax }}
+        >
           <div className="meta-dot"></div>
           <div className="meta-text-col">
             <span className="meta-title">CAMPUS PRIVILEGES</span>
@@ -108,7 +90,10 @@ export default function DigitalIDShowcase() {
         </div>
 
         {/* Floating Peripheral Element 3: Scannable Validation Box */}
-        <div className="floating-badge-element badge-qr-quick">
+        <div
+          className="floating-badge-element badge-qr-quick"
+          style={{ transform: badge3Parallax }}
+        >
           <div className="qr-mini-frame">
             <QRCodeSVG
               value="https://digitalid.app/verify/DID-2026-001"
@@ -121,22 +106,27 @@ export default function DigitalIDShowcase() {
           <span className="qr-mini-tag">QUICK SCAN</span>
         </div>
 
-        {/* ========================================================
-            3D ROTATING CARD (With True Front and Back Faces)
-            ======================================================== */}
-        <div
-          className="showcase-card-3d-flipper"
-          style={{
-            transform: `perspective(1200px) rotateX(${rotX}deg) rotateY(${rotY}deg)`
-          }}
-        >
-          {/* Dynamic Light Sheen Overlay */}
+        {/* Floating Rig providing subtle, continuous up-down floating over 5 seconds */}
+        <div className="showcase-floating-rig">
+          {/* Soft Dynamic Drop Shadow */}
+          <div className="showcase-card-shadow" aria-hidden="true"></div>
+
+          {/* ========================================================
+              3D CARD FLIPPER (Front and Back Faces with Smooth Tilt)
+              ======================================================== */}
           <div
-            className="card-glare-overlay"
+            className={`showcase-card-3d-flipper ${isHovered ? 'is-hovered' : ''} ${isFlipped ? 'is-flipped' : ''}`}
             style={{
-              background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 70%)`
+              transform: `perspective(1200px) rotateY(${currentRotY}deg) rotateX(${currentRotX}deg)`
             }}
-          ></div>
+          >
+            {/* Dynamic Light Sheen Overlay */}
+            <div
+              className="card-glare-overlay"
+              style={{
+                background: `radial-gradient(circle at ${glarePos.x}% ${glarePos.y}%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 70%)`
+              }}
+            ></div>
 
           {/* ====================================================
               1. CARD FRONT FACE
@@ -324,33 +314,25 @@ export default function DigitalIDShowcase() {
           </div>
         </div>
       </div>
+    </div>
 
-      {/* Interactive 3D Rotation Controls */}
+      {/* Interactive 3D Flip Controls */}
       <div className="showcase-controls-bar">
         <button
           type="button"
           className="ctrl-pill-btn"
-          onClick={handleFlip180}
-          title="Flip 180 degrees to view other side"
+          onClick={handleFlip}
+          title={isFlipped ? "Flip to view front side" : "Flip to view back side"}
         >
-          <RotateCw size={13} />
-          <span>{isBackSide ? 'View Front Side' : 'View Back Side'}</span>
-        </button>
-
-        <button
-          type="button"
-          className="ctrl-pill-btn"
-          onClick={toggleAutoRotate}
-          title={isAutoRotating ? 'Pause auto-rotation' : 'Resume auto-rotation'}
-        >
-          {isAutoRotating ? <Pause size={13} /> : <Play size={13} />}
-          <span>{isAutoRotating ? 'Auto-Rotate ON' : 'Auto-Rotate PAUSED'}</span>
+          <RotateCw size={13} className={isFlipped ? "rotate-flipped" : ""} />
+          <span>{isFlipped ? 'View Front Side' : 'View Back Side'}</span>
         </button>
       </div>
 
       <div className="showcase-interaction-hint">
-        <span>💡 Drag with mouse to freely inspect in 3D</span>
+        <span>💡 Move mouse over card to inspect in 3D</span>
       </div>
     </div>
   );
 }
+

@@ -12,6 +12,7 @@
   overflow-x: hidden;
   position: relative;
   width: 100%;
+  transition: background-color 0.28s ease, color 0.28s ease;
 }
 
 .landing-container {
@@ -24,6 +25,17 @@
 /* --------------------------------------------------------------------------
    2. Landing Navbar (Frosted Glass Light Sky)
    -------------------------------------------------------------------------- */
+@keyframes heroNavSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .landing-nav {
   position: sticky;
   top: 0;
@@ -34,6 +46,7 @@
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid rgba(14, 165, 233, 0.15);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: heroNavSlideDown 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .landing-nav.nav-scrolled {
@@ -214,6 +227,39 @@
   z-index: 2;
 }
 
+@keyframes heroSlideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSlideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroShowcaseScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 .hero-announcement-pill {
   display: inline-flex;
   align-items: center;
@@ -224,6 +270,7 @@
   border-radius: 999px;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 8px rgba(14, 165, 233, 0.12);
+  animation: heroSlideDownFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
 }
 
 .pill-dot {
@@ -248,6 +295,7 @@
   letter-spacing: -0.04em;
   margin-bottom: 1.5rem;
   color: #0f172a;
+  animation: heroSlideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
 }
 
 .headline-gradient {
@@ -262,6 +310,7 @@
   line-height: 1.6;
   max-width: 520px;
   margin-bottom: 2.25rem;
+  animation: heroSlideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
 }
 
 .hero-action-buttons {
@@ -270,6 +319,7 @@
   gap: 1rem;
   margin-bottom: 2.5rem;
   flex-wrap: wrap;
+  animation: heroSlideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both;
 }
 
 .hero-primary-btn {
@@ -323,6 +373,7 @@
   padding-top: 1.5rem;
   border-top: 1px solid #e2e8f0;
   flex-wrap: wrap;
+  animation: heroSlideUpFade 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
 }
 
 .signal-item {
@@ -346,6 +397,7 @@
   justify-content: center;
   align-items: center;
   position: relative;
+  animation: heroShowcaseScaleIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
 }
 
 .showcase-3d-stage-wrapper {
@@ -382,6 +434,56 @@
   z-index: 1;
 }
 
+/* Decoupled Gentle Floating Rig */
+.showcase-floating-rig {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 310px;
+  height: 485px;
+  animation: cardFloatAlive 5s ease-in-out infinite;
+  transform-origin: center center;
+  will-change: transform;
+}
+
+@keyframes cardFloatAlive {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Soft Dynamic Ground Shadow */
+.showcase-card-shadow {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.32) 0%, rgba(2, 132, 199, 0.12) 45%, transparent 75%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: 0;
+  animation: shadowPulse 5s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes shadowPulse {
+  0%, 100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateX(-50%) scale(0.86);
+    opacity: 0.55;
+  }
+}
+
 /* 3D Flipper Card Container */
 .showcase-card-3d-flipper {
   position: relative;
@@ -389,7 +491,8 @@
   width: 310px;
   height: 485px;
   transform-style: preserve-3d;
-  transition: transform 0.05s linear;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .card-glare-overlay {
@@ -1059,14 +1162,14 @@
   border-radius: 16px;
   padding: 2rem 1.75rem;
   box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.04);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 .feature-tile:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px);
   border-color: #7dd3fc;
-  box-shadow: 0 20px 30px -10px rgba(14, 165, 233, 0.16);
+  box-shadow: 0 20px 30px -10px rgba(14, 165, 233, 0.18), 0 4px 12px rgba(14, 165, 233, 0.08);
 }
 
 .tile-hover-glow {
@@ -1100,6 +1203,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, color 0.3s ease;
+}
+
+.feature-tile:hover .tile-icon-bubble {
+  transform: scale(1.08) rotate(3deg);
+  background: #bae6fd;
 }
 
 .tile-tag {
@@ -1325,12 +1434,24 @@
   background: linear-gradient(90deg, transparent, #0284c7, transparent);
   box-shadow: 0 0 10px #38bdf8;
   z-index: 5;
-  animation: scanSweep 3s ease-in-out infinite alternate;
+  animation: scanSweep 4s ease-in-out infinite alternate;
 }
 
 @keyframes scanSweep {
-  0% { top: 30px; opacity: 0.3; }
-  100% { top: 300px; opacity: 1; }
+  0% { top: 32px; opacity: 0.25; }
+  50% { opacity: 0.95; }
+  100% { top: 295px; opacity: 0.25; }
+}
+
+@keyframes verificationPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.28);
+  }
 }
 
 .scanner-qr-plate {
@@ -1354,6 +1475,7 @@
   border-radius: 999px;
   z-index: 6;
   box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15);
+  animation: verificationPulse 3s ease-in-out infinite;
 }
 
 .pill-check-icon {
@@ -1472,6 +1594,37 @@
   color: #0369a1;
   transform: translateY(-2px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+/* Button Micro-interactions (Tactile elevation, soft glow, active scale & icon nudge) */
+.landing-btn-cta,
+.hero-primary-btn,
+.hero-secondary-btn,
+.final-cta-primary-btn,
+.ctrl-pill-btn {
+  transform-origin: center center;
+}
+
+.landing-btn-cta:active,
+.hero-primary-btn:active,
+.hero-secondary-btn:active,
+.final-cta-primary-btn:active,
+.ctrl-pill-btn:active {
+  transform: scale(0.98);
+}
+
+.landing-btn-cta svg,
+.hero-primary-btn svg,
+.hero-secondary-btn svg,
+.final-cta-primary-btn svg {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-btn-cta:hover svg,
+.hero-primary-btn:hover svg,
+.hero-secondary-btn:hover svg,
+.final-cta-primary-btn:hover svg {
+  transform: translateX(3px);
 }
 
 /* --------------------------------------------------------------------------
@@ -2173,5 +2326,240 @@
 .dark-theme .footer-bottom-badge {
   color: #94a3b8;
 }
+
+/* ==========================================================================
+   Modern Scroll Animations & Scroll-Driven Reveals
+   ========================================================================== */
+
+/* Top Scroll Progress Bar */
+.landing-scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 50%, #818cf8 100%);
+  z-index: 9999;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.7);
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+[data-theme="dark"] .landing-scroll-progress-bar,
+.dark-theme .landing-scroll-progress-bar {
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 40%, #a855f7 100%);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+}
+
+@supports (animation-timeline: scroll()) {
+  .landing-scroll-progress-bar {
+    width: 100% !important;
+    transform-origin: 0% 50%;
+    animation: progressScale auto linear;
+    animation-timeline: scroll(root);
+  }
+
+  @keyframes progressScale {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
+
+/* Base scroll reveal animations */
+@media (prefers-reduced-motion: no-preference) {
+  /* Section headers slide up & fade in */
+  .trust-header,
+  .landing-features-section .section-head-center,
+  .how-it-works-landing .section-head-center {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Trust Cards */
+  .trust-card {
+    opacity: 0;
+    transform: translateY(32px) scale(0.97);
+    transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Stagger Trust Cards */
+  .trust-grid .trust-card:nth-child(1) { transition-delay: 0.05s; }
+  .trust-grid .trust-card:nth-child(2) { transition-delay: 0.15s; }
+  .trust-grid .trust-card:nth-child(3) { transition-delay: 0.25s; }
+  .trust-grid .trust-card:nth-child(4) { transition-delay: 0.35s; }
+
+  /* Feature Tiles (6 Capabilities) */
+  .feature-tile {
+    opacity: 0;
+    transform: translateY(34px) scale(0.97);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Stagger Feature Tiles */
+  .features-showcase-grid .feature-tile:nth-child(1) { transition-delay: 0.05s; }
+  .features-showcase-grid .feature-tile:nth-child(2) { transition-delay: 0.15s; }
+  .features-showcase-grid .feature-tile:nth-child(3) { transition-delay: 0.25s; }
+  .features-showcase-grid .feature-tile:nth-child(4) { transition-delay: 0.15s; }
+  .features-showcase-grid .feature-tile:nth-child(5) { transition-delay: 0.25s; }
+  .features-showcase-grid .feature-tile:nth-child(6) { transition-delay: 0.35s; }
+
+  /* Expanding connector line in How It Works */
+  .flow-connecting-line {
+    transform-origin: left center;
+    transform: scaleX(0);
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  /* Step Cards in How It Works */
+  .step-flow-card {
+    opacity: 0;
+    transform: translateY(32px) scale(0.96);
+    transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .steps-cards-row .step-flow-card:nth-child(1) { transition-delay: 0.1s; }
+  .steps-cards-row .step-flow-card:nth-child(2) { transition-delay: 0.25s; }
+  .steps-cards-row .step-flow-card:nth-child(3) { transition-delay: 0.4s; }
+
+  /* Security narrative & points */
+  .security-narrative {
+    opacity: 0;
+    transform: translateX(-24px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .security-point-item {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  .security-points-stack .security-point-item:nth-child(1) { transition-delay: 0.15s; }
+  .security-points-stack .security-point-item:nth-child(2) { transition-delay: 0.3s; }
+  .security-points-stack .security-point-item:nth-child(3) { transition-delay: 0.45s; }
+
+  /* Stylized Holographic Scanner Card */
+  .stylized-scanner-card {
+    opacity: 0;
+    transform: perspective(1000px) rotateY(-8deg) scale(0.94);
+    transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+    will-change: opacity, transform;
+  }
+
+  /* Final CTA Card */
+  .final-cta-card {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  /* Active In-View Revealed States */
+  .trust-header.scroll-in-view,
+  .landing-features-section .section-head-center.scroll-in-view,
+  .how-it-works-landing .section-head-center.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .trust-card.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .trust-card.scroll-in-view:hover {
+    transform: translateY(-3px) scale(1);
+  }
+
+  .feature-tile.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .feature-tile.scroll-in-view:hover {
+    transform: translateY(-5px) scale(1);
+  }
+
+  .flow-connecting-line.scroll-in-view {
+    transform: scaleX(1);
+  }
+
+  .step-flow-card.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .step-flow-card.scroll-in-view:hover {
+    transform: translateY(-4px) scale(1);
+  }
+
+  .security-narrative.scroll-in-view {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .security-point-item.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .stylized-scanner-card.scroll-in-view {
+    opacity: 1;
+    transform: perspective(1000px) rotateY(0deg) scale(1);
+  }
+
+  .final-cta-card.scroll-in-view {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .landing-scroll-progress-bar {
+    display: none;
+  }
+
+  .landing-nav,
+  .hero-announcement-pill,
+  .hero-headline,
+  .hero-lead-text,
+  .hero-action-buttons,
+  .hero-signals-row,
+  .hero-showcase-block,
+  .showcase-floating-rig,
+  .showcase-card-shadow,
+  .scanner-laser-beam,
+  .scanner-verification-pill,
+  .floating-badge-element,
+  .trust-header,
+  .trust-card,
+  .landing-features-section .section-head-center,
+  .feature-tile,
+  .how-it-works-landing .section-head-center,
+  .flow-connecting-line,
+  .step-flow-card,
+  .security-narrative,
+  .security-point-item,
+  .stylized-scanner-card,
+  .final-cta-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
 
 

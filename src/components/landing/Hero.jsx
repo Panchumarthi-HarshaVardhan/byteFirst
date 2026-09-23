@@ -2,9 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Shield, Sparkles, CheckCircle2 } from 'lucide-react';
 import DigitalIDShowcase from './DigitalIDShowcase';
+import { useAgent } from '../../context/AgentContext';
 
 export default function LandingHero() {
   const navigate = useNavigate();
+  const { openAgent } = useAgent();
   const [glowOffset, setGlowOffset] = React.useState({ x: 0, y: 0 });
 
   const handlePointerMove = (e) => {
@@ -40,16 +42,16 @@ export default function LandingHero() {
         <div className="hero-text-block">
           <div className="hero-announcement-pill">
             <span className="pill-dot"></span>
-            <span className="pill-text">The New Standard in Academic Credentials</span>
+            <span className="pill-text">Smart Student Identity • Powered by AuntyID</span>
           </div>
 
           <h1 className="hero-headline">
-            Your Identity. <br />
-            <span className="headline-gradient">Digitally Reimagined.</span>
+            Your ID. <br />
+            <span className="headline-gradient">Sorted by Aunty.</span>
           </h1>
 
           <p className="hero-lead-text">
-            Create a professional digital college identity in seconds — designed for the modern student.
+            Create, customize, download and manage your digital college ID with the help of AuntyID — your friendly AI identity assistant.
           </p>
 
           <div className="hero-action-buttons">
@@ -58,18 +60,19 @@ export default function LandingHero() {
               className="hero-primary-btn"
               onClick={() => navigate('/create')}
             >
-              <span>Create Your Digital ID</span>
+              <span>Create Your ID</span>
               <ArrowRight size={18} />
             </button>
 
-            <a
-              href="#features"
-              onClick={scrollToFeatures}
+            <button
+              type="button"
               className="hero-secondary-btn"
+              onClick={openAgent}
+              title="Open AuntyID AI Assistant"
             >
-              <span>Explore Features</span>
-              <ChevronRight size={17} />
-            </a>
+              <Sparkles size={17} style={{ color: '#0284c7' }} />
+              <span>Ask AuntyID</span>
+            </button>
           </div>
 
           {/* Quick value signals */}

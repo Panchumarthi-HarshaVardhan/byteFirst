@@ -11,6 +11,7 @@ import { SAMPLE_STUDENTS } from '../data/sampleData';
 import { validateAllFields } from '../utils/validation';
 import { downloadCardAsImage, printCard } from '../utils/downloadCard';
 import { CheckCircle2, Sparkles, CreditCard, ArrowLeft } from 'lucide-react';
+import ThemeToggle from '../components/ThemeToggle';
 import '../App.css';
 
 const INITIAL_STUDENT_DATA = {
@@ -168,6 +169,9 @@ export default function CreateID() {
           </Link>
 
           <div className="navbar-actions">
+            {/* Dark / Light Mode Toggle Button beside Back to Overview */}
+            <ThemeToggle />
+
             <Link to="/" className="btn btn-outline btn-sm">
               <ArrowLeft size={16} />
               <span>Back to Overview</span>

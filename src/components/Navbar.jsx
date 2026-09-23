@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CreditCard, Menu, X, Sparkles } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar({ onNavigate }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -51,8 +52,9 @@ export default function Navbar({ onNavigate }) {
           </ul>
         </nav>
 
-        {/* Right Action Button */}
+        {/* Action Button & Theme Toggle */}
         <div className="navbar-actions">
+          <ThemeToggle />
           <a
             href="#generator"
             className="btn btn-primary btn-sm nav-cta"

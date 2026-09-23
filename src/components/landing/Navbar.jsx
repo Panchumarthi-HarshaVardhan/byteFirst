@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, Menu, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import ThemeToggle from '../ThemeToggle';
 
 export default function LandingNavbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -55,6 +56,9 @@ export default function LandingNavbar() {
 
         {/* Right CTA */}
         <div className="landing-nav-actions">
+          {/* Dark / Light Mode Toggle Button beside Create Your ID */}
+          <ThemeToggle />
+
           <button
             type="button"
             className="landing-btn-cta"
@@ -92,6 +96,12 @@ export default function LandingNavbar() {
             <a href="#security" onClick={(e) => scrollToSection(e, '#security')} className="mobile-link">
               Security
             </a>
+
+            <div className="mobile-theme-row">
+              <span className="mobile-theme-label">Theme Mode</span>
+              <ThemeToggle />
+            </div>
+
             <button
               type="button"
               className="landing-btn-cta mobile-cta"

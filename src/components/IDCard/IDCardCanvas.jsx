@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import DraggableElement from './DraggableElement';
 import ElementToolbar from './ElementToolbar';
+import FloatingElementToolbar from './FloatingElementToolbar';
 import AlignmentGuides from './AlignmentGuides';
 import { CANVAS_DIMENSIONS } from '../../state/defaultDesign';
 
@@ -488,7 +489,18 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
   };
 
   return (
-    <div className="flex flex-col items-center w-full my-2">
+    <div
+      className="flex flex-col items-center w-full my-2 canvas-empty-workspace"
+      onClick={(e) => {
+        if (
+          !e.target.closest('[data-canvas-element="true"]') &&
+          !e.target.closest('[data-floating-toolbar="true"]')
+        ) {
+          onSelectElement(null);
+          setInlineEditingId(null);
+        }
+      }}
+    >
       {/* Visual Canvas Scaler Container */}
       <div
         ref={containerRef}
@@ -524,11 +536,9 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                 borderWidth: `${design?.card?.borderWidth || 1}px`
               }}
               onClick={(e) => {
-                // Only deselect if clicked directly on the card background, not on elements
                 if (
-                  e.target === e.currentTarget ||
-                  e.target.id === 'downloadable-id-card' ||
-                  e.target.getAttribute('data-card-bg') === 'true'
+                  !e.target.closest('[data-canvas-element="true"]') &&
+                  !e.target.closest('[data-floating-toolbar="true"]')
                 ) {
                   onSelectElement(null);
                   setInlineEditingId(null);
@@ -543,14 +553,8 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
               {/* Header Banner */}
               <div
                 data-card-bg="true"
-                className="w-full h-18 relative z-10 shadow-sm transition-colors duration-200"
+                className="w-full h-18 relative z-0 shadow-sm transition-colors duration-200"
                 style={{ background: design?.card?.headerBg || 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) {
-                    onSelectElement(null);
-                    setInlineEditingId(null);
-                  }
-                }}
               />
 
               {/* Decorative Subtle Background Pattern */}
@@ -584,7 +588,10 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                         if (onFocusField) onFocusField('collegeEmblem');
                         return;
                       }
-                      setInlineEditingId(elemId);
+                      const elementObj = design?.elements?.[elemId];
+                      if (elementObj?.type === 'text' || elementObj?.type === 'badge') {
+                        setInlineEditingId(elemId);
+                      }
                     }}
                   >
                     {renderElementContent(key, el)}
@@ -684,6 +691,33 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                 style={{ backgroundColor: design?.card?.accentColor || '#38bdf8' }}
               />
             </div>
+          )}
+
+          {/* Canva / Figma Style FLOATING EDITING TOOLBAR */}
+          {!isFlipped && !isExportMode && selectedElement && (
+            <FloatingElementToolbar
+              element={selectedElement}
+              studentData={student}
+              cardWidth={cardWidth}
+              cardHeight={cardHeight}
+              onUpdateElement={onUpdateElement}
+              onUpdateStudentField={onUpdateStudentField}
+              onReorderElement={onReorderElement}
+              onToggleLock={onToggleLock}
+              onHideElement={onHideElement}
+              onDeselect={() => {
+                onSelectElement(null);
+                setInlineEditingId(null);
+              }}
+              onPhotoUpload={onPhotoUpload}
+              onLogoUpload={onLogoUpload}
+              onEnterInlineEdit={(elemId) => {
+                const elementObj = design?.elements?.[elemId];
+                if (elementObj?.type === 'text' || elementObj?.type === 'badge') {
+                  setInlineEditingId(elemId);
+                }
+              }}
+            />
           )}
         </div>
       </div>

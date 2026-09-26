@@ -172,6 +172,7 @@ export default function DraggableElement({
       ref={elementRef}
       id={`canvas-elem-${element.id}`}
       data-element-id={element.id}
+      data-canvas-element="true"
       className={`absolute group select-none transition-shadow ${
         isSelected
           ? isEditing
@@ -184,7 +185,7 @@ export default function DraggableElement({
         top: `${element.y}px`,
         width: element.width ? `${element.width}px` : 'auto',
         height: element.height ? `${element.height}px` : 'auto',
-        zIndex: element.zIndex || 10,
+        zIndex: isSelected ? Math.max(25, (element.zIndex || 10) + 15) : (element.zIndex || 10),
         opacity: element.opacity !== undefined ? element.opacity : 1,
         transform: element.rotation ? `rotate(${element.rotation}deg)` : 'none',
         userSelect: isEditing ? 'text' : 'none',

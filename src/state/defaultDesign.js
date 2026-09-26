@@ -92,7 +92,7 @@ export const DEFAULT_HORIZONTAL_DESIGN = {
       color: '#ffffff',
       rotation: 0,
       visible: true,
-      zIndex: 10
+      zIndex: 16
     },
 
     // Body: Left Photo
@@ -389,7 +389,7 @@ export const DEFAULT_VERTICAL_DESIGN = {
       color: '#ffffff',
       rotation: 0,
       visible: true,
-      zIndex: 10
+      zIndex: 16
     },
 
     // Photo Center

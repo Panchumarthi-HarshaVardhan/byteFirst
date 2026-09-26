@@ -641,7 +641,14 @@ export default function CreateID() {
             />
 
             {/* Center Canvas Area */}
-            <div className="flex-1 w-full flex flex-col items-center justify-center overflow-hidden py-2">
+            <div
+              className="flex-1 w-full flex flex-col items-center justify-center overflow-hidden py-2"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setSelectedElementId(null);
+                }
+              }}
+            >
               <IDCardCanvas
                 ref={cardRef}
                 student={studentData}

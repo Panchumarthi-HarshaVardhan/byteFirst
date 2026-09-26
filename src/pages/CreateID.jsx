@@ -29,6 +29,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { getDefaultDesign } from '../state/defaultDesign';
 import { useDesignHistory } from '../utils/history';
 import { applyActionsToDesign } from '../utils/designActions';
+import { useAgent } from '../context/AgentContext';
 import '../App.css';
 
 const INITIAL_STUDENT_DATA = {
@@ -64,6 +65,7 @@ const BLANK_STUDENT_DATA = {
 };
 
 export default function CreateID() {
+  const { updateSafeContext, registerHandlers, unregisterHandlers } = useAgent();
   const [studentData, setStudentData] = useState(INITIAL_STUDENT_DATA);
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
   const [cardOrientation, setCardOrientation] = useState('horizontal');
@@ -88,6 +90,23 @@ export default function CreateID() {
   } = useDesignHistory(getDefaultDesign('horizontal'));
 
   const cardRef = useRef(null);
+
+  // Sync safe UI telemetry with Agent (strictly non-sensitive metadata)
+  useEffect(() => {
+    const requiredKeys = ['fullName', 'rollNumber', 'collegeName', 'branch', 'year', 'section'];
+    const completedCount = requiredKeys.filter((k) => !!studentData[k]?.trim()).length;
+
+    updateSafeContext({
+      page: '/create',
+      requiredFieldsCompleted: completedCount,
+      totalRequiredFields: requiredKeys.length,
+      photoUploaded: !!studentData.photoUrl,
+      selectedTheme: selectedTheme.name,
+      cardOrientation,
+      hasValidationErrors: Object.keys(formErrors).length > 0,
+      isGenerated
+    });
+  }, [studentData, selectedTheme, cardOrientation, formErrors, isGenerated, updateSafeContext]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -392,6 +411,94 @@ export default function CreateID() {
     printCard();
   };
 
+  // Register real application action handlers with the AI Agent
+  useEffect(() => {
+    registerHandlers({
+      fillStudentForm: (fields) => {
+        setStudentData((prev) => ({
+          ...prev,
+          ...fields
+        }));
+        setFormErrors((prev) => {
+          const next = { ...prev };
+          Object.keys(fields).forEach((k) => delete next[k]);
+          return next;
+        });
+        setIsGenerated(true);
+        showToast('Form updated by AuntyID');
+        return { success: true, updatedFields: Object.keys(fields) };
+      },
+      updateStudentField: (field, value) => {
+        setStudentData((prev) => ({ ...prev, [field]: value }));
+        setFormErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+        return { success: true };
+      },
+      validateStudentForm: () => {
+        const errors = validateAllFields(studentData);
+        setFormErrors(errors);
+        return { success: Object.keys(errors).length === 0, errors };
+      },
+      generateId: () => {
+        handleGenerate();
+        return { success: true };
+      },
+      downloadId: async () => {
+        await handleDownload();
+        return { success: true };
+      },
+      printId: () => {
+        handlePrint();
+        return { success: true };
+      },
+      setIdTheme: (themeName) => {
+        if (!themeName) return { success: false, error: 'No theme specified' };
+        const q = themeName.toLowerCase().replace(/[-_]/g, ' ');
+        let match = CARD_THEMES.find(
+          (t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q)
+        );
+        if (!match) {
+          if (q.includes('blue') || q.includes('modern') || q.includes('oxford')) {
+            match = CARD_THEMES.find((t) => t.id === 'oxford-blue');
+          } else if (q.includes('indigo') || q.includes('violet') || q.includes('royal') || q.includes('purple')) {
+            match = CARD_THEMES.find((t) => t.id === 'royal-indigo');
+          } else if (q.includes('crimson') || q.includes('red') || q.includes('harvard')) {
+            match = CARD_THEMES.find((t) => t.id === 'harvard-crimson');
+          } else if (q.includes('emerald') || q.includes('green') || q.includes('mit')) {
+            match = CARD_THEMES.find((t) => t.id === 'mit-emerald');
+          } else if (q.includes('dark') || q.includes('slate') || q.includes('midnight') || q.includes('black') || q.includes('minimal')) {
+            match = CARD_THEMES.find((t) => t.id === 'midnight-slate');
+          } else if (q.includes('amber') || q.includes('gold') || q.includes('imperial') || q.includes('sunset') || q.includes('orange')) {
+            match = CARD_THEMES.find((t) => t.id === 'amber-gold');
+          }
+        }
+        if (match) {
+          handleThemeChange(match);
+          return { success: true, theme: match.name };
+        }
+        return { success: false, error: 'Theme not found' };
+      },
+      flipIdCard: () => {
+        setIsFlipped((prev) => !prev);
+        return { success: true };
+      },
+      resetForm: () => {
+        setStudentData(BLANK_STUDENT_DATA);
+        setFormErrors({});
+        setIsGenerated(false);
+        showToast('Form reset by AuntyID');
+        return { success: true };
+      }
+    });
+
+    return () => {
+      unregisterHandlers();
+    };
+  }, [studentData, isFlipped, registerHandlers, unregisterHandlers]);
+
   return (
     <div className="digital-id-app min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* Top Creation Header Bar */}
@@ -402,7 +509,7 @@ export default function CreateID() {
               <CreditCard className="logo-icon" size={20} />
             </div>
             <span className="brand-text font-black text-lg tracking-tight text-slate-900 dark:text-white">
-              Digital<span className="brand-accent text-blue-600 dark:text-blue-400">ID</span>
+              Aunty<span className="brand-accent text-blue-600 dark:text-blue-400">ID</span>
               <span className="ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
                 AI STUDIO
               </span>

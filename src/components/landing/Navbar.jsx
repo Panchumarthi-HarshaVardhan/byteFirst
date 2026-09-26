@@ -34,7 +34,7 @@ export default function LandingNavbar() {
             <CreditCard size={20} className="logo-svg" />
           </div>
           <span className="landing-brand-name">
-            Digital<span className="brand-dot">ID</span>
+            Aunty<span className="brand-dot">ID</span>
           </span>
         </Link>
 

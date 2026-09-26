@@ -517,6 +517,14 @@ export default function CreateID() {
           </Link>
 
           <div className="navbar-actions flex items-center gap-3">
+            <Link
+              to="/editor"
+              className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 transition"
+              title="Open Professional Canvas Designer"
+            >
+              <Sparkles size={14} className="text-blue-600 dark:text-blue-400" />
+              <span>Canvas Studio</span>
+            </Link>
             <ThemeToggle />
             <Link to="/" className="btn btn-outline btn-sm back-to-overview-btn">
               <ArrowLeft size={16} />

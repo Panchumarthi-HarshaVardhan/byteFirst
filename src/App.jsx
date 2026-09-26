@@ -5,6 +5,7 @@ import { AgentProvider } from './context/AgentContext';
 import DigitalIDAgent from './components/agent/DigitalIDAgent';
 import Home from './pages/Home';
 import CreateID from './pages/CreateID';
+import DesignEditor from './pages/DesignEditor';
 
 export default function App() {
   return (
@@ -17,6 +18,10 @@ export default function App() {
 
             {/* 2. ID Creation Experience (Student Form, Preview, Customization & Download) */}
             <Route path="/create" element={<CreateID />} />
+
+            {/* 3. Professional Canvas ID Card Designer (Canva / Figma style) */}
+            <Route path="/editor" element={<DesignEditor />} />
+            <Route path="/design" element={<DesignEditor />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

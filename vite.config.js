@@ -70,6 +70,7 @@ export default defineConfig(({ mode }) => {
   const apiKey = env.GROQ_API_KEY || process.env.GROQ_API_KEY;
 
   return {
+    base: '/byteFirst/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src')

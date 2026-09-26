@@ -106,6 +106,30 @@ export default function CreateID() {
     });
   }, [studentData, selectedTheme, cardOrientation, formErrors, isGenerated, updateSafeContext]);
 
+  // Continuously sync active card data to localStorage so Canvas Studio always reflects the generated card
+  useEffect(() => {
+    try {
+      localStorage.setItem('auntyid_generated_card', JSON.stringify({
+        student: studentData,
+        design: design,
+        orientation: 'landscape',
+        timestamp: Date.now()
+      }));
+    } catch (_) {}
+  }, [studentData, design]);
+
+  const handleOpenCanvasStudio = () => {
+    try {
+      localStorage.setItem('auntyid_generated_card', JSON.stringify({
+        student: studentData,
+        design: design,
+        orientation: 'landscape',
+        timestamp: Date.now()
+      }));
+      localStorage.removeItem('auntyid_canvas_design_v1');
+    } catch (_) {}
+  };
+
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -517,6 +541,7 @@ export default function CreateID() {
           <div className="navbar-actions flex items-center gap-3">
             <Link
               to="/editor"
+              onClick={handleOpenCanvasStudio}
               className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold flex items-center gap-1.5 hover:bg-blue-100 transition"
               title="Open Professional Canvas Designer"
             >

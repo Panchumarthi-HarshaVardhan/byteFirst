@@ -513,6 +513,18 @@ export default function ElementsPanel({
             <div className="space-y-3">
               <button
                 type="button"
+                onClick={() => onApplyTemplate('generated-dashboard')}
+                className="w-full p-3 rounded-xl border-2 border-blue-500 hover:border-blue-600 text-left transition bg-blue-50/50 dark:bg-blue-950/30 group"
+              >
+                <div className="h-20 w-full rounded-lg bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 mb-2 flex items-center justify-center text-white font-bold text-xs shadow-inner">
+                  Generated Dashboard Card (Landscape)
+                </div>
+                <p className="text-xs font-bold text-blue-700 dark:text-blue-300">Generated Dashboard Card</p>
+                <p className="text-[11px] text-slate-500">Exact ID card generated from your AuntyID dashboard in landscape layout</p>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => onApplyTemplate('student-campus')}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 text-left transition bg-slate-50/50 dark:bg-slate-800/40 group"
               >

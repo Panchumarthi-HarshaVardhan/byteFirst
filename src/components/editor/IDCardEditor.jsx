@@ -7,26 +7,61 @@ import LayersPanel from './LayersPanel';
 import PreviewModal from './PreviewModal';
 import ExportModal from './ExportModal';
 import { DEFAULT_TEMPLATES } from './defaultTemplates';
-import { CR80_DIMENSIONS, printCardStage, resolveDynamicValue } from './editorUtils';
+import { CR80_DIMENSIONS, printCardStage, resolveDynamicValue, buildCanvasDesignFromGenerated } from './editorUtils';
 import { SAMPLE_STUDENTS } from '../../data/sampleData';
 import { CheckCircle2, Layers, Sliders } from 'lucide-react';
 
 const STORAGE_KEY = 'auntyid_canvas_design_v1';
 
 export default function IDCardEditor() {
-  // 1. Initial State from localStorage or default Academic Campus template
-  const initialDesign = () => {
+  // Retrieve student profile from generated card or sample data
+  const getInitialStudent = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.front && parsed.back) return parsed;
+      const generatedRaw = localStorage.getItem('auntyid_generated_card');
+      if (generatedRaw) {
+        const parsed = JSON.parse(generatedRaw);
+        if (parsed.student && parsed.student.fullName) {
+          return parsed.student;
+        }
       }
     } catch (_) {}
-    return DEFAULT_TEMPLATES[0]; // Academic Campus ID
+    return SAMPLE_STUDENTS[0];
   };
 
-  const [design, setDesign] = useState(initialDesign);
+  // 1. Initial State from generated dashboard card, localStorage, or fallback
+  const getInitialDesign = () => {
+    try {
+      const generatedRaw = localStorage.getItem('auntyid_generated_card');
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const generatedParsed = generatedRaw ? JSON.parse(generatedRaw) : null;
+      const savedParsed = saved ? JSON.parse(saved) : null;
+
+      // Always show the generated dashboard card if available
+      if (generatedParsed?.student) {
+        if (!savedParsed || (generatedParsed.timestamp && (!savedParsed.timestamp || generatedParsed.timestamp >= savedParsed.timestamp))) {
+          const generatedDesign = buildCanvasDesignFromGenerated(generatedParsed.student, generatedParsed.design);
+          generatedDesign.orientation = 'landscape';
+          return generatedDesign;
+        }
+      }
+
+      if (savedParsed && savedParsed.front && savedParsed.back) {
+        savedParsed.orientation = 'landscape';
+        return savedParsed;
+      }
+
+      if (generatedParsed?.student) {
+        const generatedDesign = buildCanvasDesignFromGenerated(generatedParsed.student, generatedParsed.design);
+        generatedDesign.orientation = 'landscape';
+        return generatedDesign;
+      }
+    } catch (_) {}
+    const defaultDesign = buildCanvasDesignFromGenerated(SAMPLE_STUDENTS[0], {});
+    defaultDesign.orientation = 'landscape';
+    return defaultDesign;
+  };
+
+  const [design, setDesign] = useState(getInitialDesign);
   const [side, setSide] = useState('front'); // 'front' | 'back'
   const [selectedIds, setSelectedIds] = useState([]);
   const [copiedElements, setCopiedElements] = useState([]);
@@ -50,10 +85,10 @@ export default function IDCardEditor() {
   const [toastMessage, setToastMessage] = useState(null);
 
   // Active Real Student Profile for Dynamic Placeholders
-  const [activeStudent, setActiveStudent] = useState(SAMPLE_STUDENTS[0]);
+  const [activeStudent, setActiveStudent] = useState(getInitialStudent);
 
   // History Stack for Undo / Redo
-  const [history, setHistory] = useState([initialDesign()]);
+  const [history, setHistory] = useState([getInitialDesign()]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
   const showToast = (msg) => {
@@ -82,7 +117,7 @@ export default function IDCardEditor() {
 
     // Persist to local storage
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newDesign));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...newDesign, timestamp: Date.now() }));
     } catch (_) {}
   }, [historyIndex]);
 
@@ -285,9 +320,34 @@ export default function IDCardEditor() {
 
   // Apply Full Template Preset
   const handleApplyTemplate = useCallback((templateId) => {
+    if (templateId === 'generated-dashboard') {
+      try {
+        const generatedRaw = localStorage.getItem('auntyid_generated_card');
+        if (generatedRaw) {
+          const parsed = JSON.parse(generatedRaw);
+          if (parsed.student) {
+            const gen = buildCanvasDesignFromGenerated(parsed.student, parsed.design);
+            gen.orientation = 'landscape';
+            commitDesignChange(gen);
+            setActiveStudent(parsed.student);
+            setSelectedIds([]);
+            showToast('Applied Generated Dashboard Card (Landscape)');
+            return;
+          }
+        }
+      } catch (_) {}
+      const fallback = buildCanvasDesignFromGenerated(SAMPLE_STUDENTS[0], {});
+      fallback.orientation = 'landscape';
+      commitDesignChange(fallback);
+      setSelectedIds([]);
+      showToast('Applied Generated Card (Landscape)');
+      return;
+    }
+
     const template = DEFAULT_TEMPLATES.find((t) => t.id === templateId);
     if (template && window.confirm(`Apply "${template.name}" template? Current unsaved edits will be replaced.`)) {
-      commitDesignChange(template);
+      const tpl = { ...template, orientation: 'landscape' };
+      commitDesignChange(tpl);
       setSelectedIds([]);
       showToast(`Applied ${template.name}`);
     }

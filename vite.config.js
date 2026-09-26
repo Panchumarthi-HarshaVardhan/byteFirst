@@ -69,8 +69,21 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiKey = env.GROQ_API_KEY || process.env.GROQ_API_KEY;
 
+  // Determine base path based on deployment environment:
+  // - Vercel sets VERCEL=1 -> base: '/'
+  // - GitHub Pages / GitHub Actions (GITHUB_ACTIONS=true, GITHUB_PAGES=true, or DEPLOY_TARGET=gh-pages) -> base: '/byteFirst/'
+  // - Custom override via VITE_BASE_PATH or BASE_PATH
+  // - Normal production / local development: '/'
+  const isGitHubPages = Boolean(
+    env.GITHUB_PAGES === 'true' ||
+    process.env.GITHUB_PAGES === 'true' ||
+    process.env.DEPLOY_TARGET === 'gh-pages' ||
+    (process.env.GITHUB_ACTIONS === 'true' && !process.env.VERCEL)
+  );
+  const base = env.VITE_BASE_PATH || process.env.VITE_BASE_PATH || process.env.BASE_PATH || (isGitHubPages ? '/byteFirst/' : '/');
+
   return {
-    base: '/byteFirst/',
+    base,
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src')

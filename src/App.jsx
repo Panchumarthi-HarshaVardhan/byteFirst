@@ -7,10 +7,26 @@ import Home from './pages/Home';
 import CreateID from './pages/CreateID';
 import DesignEditor from './pages/DesignEditor';
 
+/**
+ * Dynamically resolves the router basename:
+ * - On GitHub Pages (e.g. /byteFirst/...), uses '/byteFirst'
+ * - On Vercel or standard root deployments (e.g. /), uses '/'
+ */
+function getBasename() {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/byteFirst')) {
+    return '/byteFirst';
+  }
+  const base = import.meta.env.BASE_URL;
+  if (base && base !== '/' && base !== './') {
+    return base.endsWith('/') ? base.slice(0, -1) : base;
+  }
+  return '/';
+}
+
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter basename="/byteFirst/">
+      <BrowserRouter basename={getBasename()}>
         <AgentProvider>
           <Routes>
             {/* 1. Landing Page (Pure showcase & presentation) */}

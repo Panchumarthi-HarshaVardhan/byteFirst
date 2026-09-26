@@ -41,20 +41,25 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
   const orientation = design?.card?.orientation || 'horizontal';
   const { width: cardWidth, height: cardHeight } = CANVAS_DIMENSIONS[orientation] || CANVAS_DIMENSIONS.horizontal;
 
-  // Responsive Visual Scaling calculation
+  // Responsive Visual Scaling calculation to fit exact screen space
   useEffect(() => {
     const updateScale = () => {
       if (!containerRef.current) return;
-      const containerWidth = containerRef.current.parentElement?.clientWidth || cardWidth;
-      // Allow scale up to 1 (natural resolution) or scale down if container is smaller
-      const scale = Math.min(1, Math.max(0.48, (containerWidth - 32) / cardWidth));
+      const parent = containerRef.current.parentElement;
+      const containerWidth = parent?.clientWidth || cardWidth;
+      const containerHeight = parent?.clientHeight || cardHeight;
+
+      // Allow scale up to 1 (natural resolution) or scale down to fit BOTH width and height
+      const scaleX = (containerWidth - 24) / cardWidth;
+      const scaleY = (containerHeight - 16) / cardHeight;
+      const scale = Math.min(1, Math.max(0.42, Math.min(scaleX, scaleY)));
       setCanvasScale(scale);
     };
 
     updateScale();
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
-  }, [cardWidth, orientation]);
+  }, [cardWidth, cardHeight, orientation]);
 
   // Derived student information with fallbacks
   const displayName = student.fullName && student.fullName.trim() ? student.fullName.toUpperCase() : 'STUDENT NAME';
@@ -490,7 +495,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
 
   return (
     <div
-      className="flex flex-col items-center w-full my-2 canvas-empty-workspace"
+      className="flex flex-col items-center justify-center w-full h-full min-h-0 canvas-empty-workspace"
       onClick={(e) => {
         if (
           !e.target.closest('[data-canvas-element="true"]') &&
@@ -509,7 +514,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
           height: `${Math.round(cardHeight * canvasScale)}px`,
           transition: 'width 0.15s ease-out, height 0.15s ease-out'
         }}
-        className="relative flex items-center justify-center"
+        className="relative flex items-center justify-center shrink-0"
       >
         {/* Scaled Virtual Canvas Root */}
         <div

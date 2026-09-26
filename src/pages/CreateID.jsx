@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import StudentForm from '../components/StudentForm';
 import IDCardCanvas from '../components/IDCard/IDCardCanvas';
 import ElementToolbar from '../components/IDCard/ElementToolbar';
-import AIChat from '../components/AI/AIChat';
 import ThemeSelector from '../components/ThemeSelector';
 import ActionToolbar from '../components/ActionToolbar';
 import Footer from '../components/Footer';
@@ -65,7 +64,7 @@ const BLANK_STUDENT_DATA = {
 };
 
 export default function CreateID() {
-  const { updateSafeContext, registerHandlers, unregisterHandlers } = useAgent();
+  const { updateSafeContext, registerHandlers, unregisterHandlers, openAgent } = useAgent();
   const [studentData, setStudentData] = useState(INITIAL_STUDENT_DATA);
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
   const [cardOrientation, setCardOrientation] = useState('horizontal');
@@ -76,7 +75,6 @@ export default function CreateID() {
   const [toastMessage, setToastMessage] = useState(null);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const [activeMobileTab, setActiveMobileTab] = useState('canvas'); // 'canvas', 'form', 'ai'
-  const [isAiChatOpen, setIsAiChatOpen] = useState(false);
 
   // Centralized Design State & Undo/Redo History
   const {
@@ -500,10 +498,10 @@ export default function CreateID() {
   }, [studentData, isFlipped, registerHandlers, unregisterHandlers]);
 
   return (
-    <div className="digital-id-app min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+    <div className="digital-id-app min-h-screen lg:h-screen lg:max-h-screen lg:overflow-hidden flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* Top Creation Header Bar */}
-      <header className="navbar-container sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="navbar-inner max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
+      <header className="navbar-container sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shrink-0">
+        <div className="navbar-inner max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
           <Link to="/" className="brand-logo flex items-center gap-2">
             <div className="logo-icon-wrap p-2 rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
               <CreditCard className="logo-icon" size={20} />
@@ -535,9 +533,9 @@ export default function CreateID() {
       </header>
 
       {/* Main Studio Workspace */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto p-3 sm:p-5 lg:p-6">
+      <main className="flex-1 w-full max-w-[1720px] mx-auto p-2 sm:p-3 lg:p-4 flex flex-col min-h-0 lg:overflow-hidden">
         {/* Mobile Tab Switcher */}
-        <div className="lg:hidden flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl mb-4 text-xs font-semibold">
+        <div className="lg:hidden flex bg-slate-200 dark:bg-slate-800 p-1 rounded-xl mb-3 text-xs font-semibold shrink-0">
           <button
             type="button"
             onClick={() => setActiveMobileTab('canvas')}
@@ -560,7 +558,7 @@ export default function CreateID() {
           </button>
           <button
             type="button"
-            onClick={() => setIsAiChatOpen(true)}
+            onClick={openAgent}
             className="flex-1 py-2 rounded-lg flex items-center justify-center gap-1.5 transition text-blue-600 dark:text-blue-400 font-bold"
           >
             <Bot size={14} />
@@ -569,80 +567,84 @@ export default function CreateID() {
         </div>
 
         {/* 2-Column Laptop-Friendly Studio Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-5 items-stretch flex-1 min-h-0 lg:overflow-hidden">
           {/* ================= LEFT COLUMN: Student Credentials Form & Theming (lg:col-span-5 xl:col-span-4) ================= */}
           <div
-            className={`lg:col-span-5 xl:col-span-4 space-y-5 ${
-              activeMobileTab === 'form' ? 'block' : 'hidden lg:block'
+            className={`lg:col-span-5 xl:col-span-4 flex flex-col lg:h-full lg:max-h-full min-h-0 ${
+              activeMobileTab === 'form' ? 'block' : 'hidden lg:flex'
             }`}
           >
-            <StudentForm
-              formData={studentData}
-              errors={formErrors}
-              onChange={handleInputChange}
-              onPhotoUpload={handlePhotoUpload}
-              onPhotoRemove={handlePhotoRemove}
-              onLogoUpload={handleLogoUpload}
-              onLogoRemove={handleLogoRemove}
-              onLoadSample={handleLoadSample}
-              onReset={handleResetForm}
-            />
+            <div className="flex-1 lg:overflow-y-auto space-y-3.5 pr-1 sm:pr-2 custom-scrollbar">
+              <StudentForm
+                formData={studentData}
+                errors={formErrors}
+                onChange={handleInputChange}
+                onPhotoUpload={handlePhotoUpload}
+                onPhotoRemove={handlePhotoRemove}
+                onLogoUpload={handleLogoUpload}
+                onLogoRemove={handleLogoRemove}
+                onLoadSample={handleLoadSample}
+                onReset={handleResetForm}
+              />
 
-            {/* Theme Selector */}
-            <ThemeSelector
-              selectedTheme={selectedTheme}
-              onThemeChange={handleThemeChange}
-              orientation={cardOrientation}
-              onOrientationChange={handleOrientationChange}
-              isFlipped={isFlipped}
-              onToggleFlip={() => setIsFlipped(!isFlipped)}
-            />
+              {/* Theme Selector */}
+              <ThemeSelector
+                selectedTheme={selectedTheme}
+                onThemeChange={handleThemeChange}
+                orientation={cardOrientation}
+                onOrientationChange={handleOrientationChange}
+                isFlipped={isFlipped}
+                onToggleFlip={() => setIsFlipped(!isFlipped)}
+              />
 
-            {/* Actions Toolbar */}
-            <ActionToolbar
-              onGenerate={handleGenerate}
-              onDownload={handleDownload}
-              onPrint={handlePrint}
-              onFlip={() => setIsFlipped(!isFlipped)}
-              isFlipped={isFlipped}
-              isGenerated={isGenerated}
-              isDownloading={isDownloading}
-              hasValidationErrors={Object.keys(formErrors).length > 0}
-            />
+              {/* Actions Toolbar */}
+              <ActionToolbar
+                onGenerate={handleGenerate}
+                onDownload={handleDownload}
+                onPrint={handlePrint}
+                onFlip={() => setIsFlipped(!isFlipped)}
+                isFlipped={isFlipped}
+                isGenerated={isGenerated}
+                isDownloading={isDownloading}
+                hasValidationErrors={Object.keys(formErrors).length > 0}
+              />
+            </div>
           </div>
 
           {/* ================= RIGHT COLUMN: Interactive ID Card Canvas (lg:col-span-7 xl:col-span-8) ================= */}
           <div
-            className={`lg:col-span-7 xl:col-span-8 flex flex-col items-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl relative min-h-[640px] ${
-              activeMobileTab === 'canvas' ? 'block' : 'hidden lg:block'
+            className={`lg:col-span-7 xl:col-span-8 flex flex-col items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xl relative lg:h-full lg:max-h-full min-h-0 overflow-hidden ${
+              activeMobileTab === 'canvas' ? 'block' : 'hidden lg:flex'
             }`}
           >
             {/* Contextual Canvas Editor Bar (Active element properties or studio navigation) */}
-            <ElementToolbar
-              element={design?.elements && selectedElementId ? design.elements[selectedElementId] : null}
-              studentData={studentData}
-              onUpdateStudentField={handleUpdateStudentField}
-              onUpdateStyle={(id, styles) => handleUpdateElement(id, styles, true)}
-              onReorder={handleReorderElement}
-              onToggleLock={handleToggleLock}
-              onHide={handleHideElement}
-              onDeselect={() => setSelectedElementId(null)}
-              onPhotoUpload={handlePhotoUpload}
-              onLogoUpload={handleLogoUpload}
-              cardOrientation={cardOrientation}
-              onOrientationChange={handleOrientationChange}
-              isFlipped={isFlipped}
-              onToggleFlip={() => setIsFlipped(!isFlipped)}
-              canUndo={canUndo}
-              canRedo={canRedo}
-              onUndo={undo}
-              onRedo={redo}
-              onResetDesign={handleResetDesign}
-            />
+            <div className="w-full shrink-0">
+              <ElementToolbar
+                element={design?.elements && selectedElementId ? design.elements[selectedElementId] : null}
+                studentData={studentData}
+                onUpdateStudentField={handleUpdateStudentField}
+                onUpdateStyle={(id, styles) => handleUpdateElement(id, styles, true)}
+                onReorder={handleReorderElement}
+                onToggleLock={handleToggleLock}
+                onHide={handleHideElement}
+                onDeselect={() => setSelectedElementId(null)}
+                onPhotoUpload={handlePhotoUpload}
+                onLogoUpload={handleLogoUpload}
+                cardOrientation={cardOrientation}
+                onOrientationChange={handleOrientationChange}
+                isFlipped={isFlipped}
+                onToggleFlip={() => setIsFlipped(!isFlipped)}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                onUndo={undo}
+                onRedo={redo}
+                onResetDesign={handleResetDesign}
+              />
+            </div>
 
             {/* Center Canvas Area */}
             <div
-              className="flex-1 w-full flex flex-col items-center justify-center overflow-hidden py-2"
+              className="flex-1 w-full min-h-0 flex flex-col items-center justify-center overflow-hidden py-1"
               onClick={(e) => {
                 if (e.target === e.currentTarget) {
                   setSelectedElementId(null);
@@ -669,7 +671,7 @@ export default function CreateID() {
             </div>
 
             {/* Design Hint Footer */}
-            <div className="w-full pt-3 mt-auto border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+            <div className="w-full pt-2 mt-auto border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
               <div className="flex items-center gap-1.5">
                 <Sparkles size={13} className="text-amber-500 shrink-0" />
                 <span>
@@ -684,57 +686,8 @@ export default function CreateID() {
         </div>
       </main>
 
-      <Footer />
-
-      {/* Floating AI Chatbot Button & Window (Bottom Right) */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-        {/* Floating AI Chat Window Popover */}
-        {isAiChatOpen && (
-          <div className="mb-3 w-[420px] max-w-[calc(100vw-2rem)] h-[620px] max-h-[82vh] shadow-2xl rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col animate-in slide-in-from-bottom-5 fade-in duration-200">
-            <AIChat
-              currentDesign={design}
-              onApplyActions={handleApplyAiActions}
-              onResetDesign={handleResetDesign}
-              onClose={() => setIsAiChatOpen(false)}
-              onImageAttached={(role, dataUrl) => {
-                if (role === 'photo') {
-                  handlePhotoUpload(dataUrl);
-                  showToast('Student photograph added to ID card!');
-                } else if (role === 'logo') {
-                  handleLogoUpload(dataUrl);
-                  showToast('Institution logo added to ID card!');
-                }
-              }}
-              onUpdateStudentData={(updates) => {
-                if (updates && Object.keys(updates).length > 0) {
-                  setStudentData((prev) => ({ ...prev, ...updates }));
-                  showToast(`Updated profile details with AI`);
-                }
-              }}
-            />
-          </div>
-        )}
-
-        {/* The Floating Launcher Button */}
-        <button
-          type="button"
-          onClick={() => setIsAiChatOpen(!isAiChatOpen)}
-          className={`group flex items-center gap-2.5 px-4 py-3 rounded-full font-bold text-sm shadow-xl hover:shadow-2xl transition-all duration-200 border cursor-pointer ${
-            isAiChatOpen
-              ? 'bg-slate-900 dark:bg-slate-800 text-white border-slate-700 hover:bg-slate-800'
-              : 'bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 text-white border-blue-400/40 hover:scale-105 active:scale-95 shadow-blue-500/25'
-          }`}
-          title={isAiChatOpen ? 'Close AI Assistant' : 'Open AI Design Assistant'}
-        >
-          <div className="relative">
-            <Sparkles size={18} className={isAiChatOpen ? '' : 'animate-spin duration-3000'} />
-            <span className="absolute -top-1 -right-1 flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-400"></span>
-            </span>
-          </div>
-          <span>{isAiChatOpen ? 'Close AI' : '✨ Ask AI Designer'}</span>
-        </button>
+      <div className="lg:hidden">
+        <Footer />
       </div>
 
       {/* Toast Notification Alert */}

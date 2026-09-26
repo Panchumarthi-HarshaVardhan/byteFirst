@@ -2805,7 +2805,23 @@
 
 .hanging-card-body {
   box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.hanging-card-pendulum.is-dragging {
+  cursor: grabbing !important;
+  z-index: 30;
+}
+
+.hanging-card-pendulum.is-dragging .hanging-card-body {
+  box-shadow: 0 30px 60px -10px rgba(14, 165, 233, 0.38), 0 0 0 2px rgba(14, 165, 233, 0.6) !important;
+  border-color: #38bdf8 !important;
+}
+
+[data-theme="dark"] .hanging-card-pendulum.is-dragging .hanging-card-body,
+.dark .hanging-card-pendulum.is-dragging .hanging-card-body {
+  box-shadow: 0 30px 65px -10px rgba(2, 132, 199, 0.55), 0 0 0 2px rgba(56, 189, 248, 0.8) !important;
+  border-color: #38bdf8 !important;
 }
 
 .hanging-card-hint {
@@ -2838,6 +2854,7 @@
     opacity: 1;
   }
 }
+
 
 
 

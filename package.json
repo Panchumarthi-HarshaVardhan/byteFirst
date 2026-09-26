@@ -11,7 +11,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "framer-motion": "^13.4.4",
+    "framer-motion": "12.43.0",
     "html-to-image": "^1.11.11",
     "jsbarcode": "^3.12.3",
     "jspdf": "^4.2.1",
@@ -25,6 +25,15 @@
     "react-konva": "^18.2.10",
     "react-router-dom": "^7.18.4",
     "tailwind-merge": "^3.7.0"
+  },
+  "overrides": {
+    "lightswind": {
+      "lucide-react": "$lucide-react",
+      "tailwind-merge": "$tailwind-merge"
+    },
+    "react-konva": {
+      "konva": "$konva"
+    }
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

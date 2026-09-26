@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronRight, Shield, Sparkles, CheckCircle2 } from 'lucide-react';
 import DigitalIDShowcase from './DigitalIDShowcase';
+import { HangingIdCard } from '../lightswind/hanging-id-card';
 import { useAgent } from '../../context/AgentContext';
 
 export default function LandingHero() {
   const navigate = useNavigate();
   const { openAgent } = useAgent();
-  const [glowOffset, setGlowOffset] = React.useState({ x: 0, y: 0 });
+  const [glowOffset, setGlowOffset] = useState({ x: 0, y: 0 });
+  const [showcaseMode, setShowcaseMode] = useState('hanging'); // 'hanging' | '3d'
 
   const handlePointerMove = (e) => {
     if (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -92,9 +94,51 @@ export default function LandingHero() {
           </div>
         </div>
 
-        {/* Right Column: 3D Digital ID Showcase */}
+        {/* Right Column: Interactive ID Showcase */}
         <div className="hero-showcase-block">
-          <DigitalIDShowcase />
+          <div className="hero-showcase-container">
+            {/* Mode Switcher Tabs */}
+            <div className="hero-showcase-switcher" role="tablist" aria-label="ID Showcase Modes">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={showcaseMode === 'hanging'}
+                className={`showcase-toggle-pill ${showcaseMode === 'hanging' ? 'active' : ''}`}
+                onClick={() => setShowcaseMode('hanging')}
+              >
+                <span>🪢 Hanging Lanyard</span>
+                <span className="pill-badge">Physics</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={showcaseMode === '3d'}
+                className={`showcase-toggle-pill ${showcaseMode === '3d' ? 'active' : ''}`}
+                onClick={() => setShowcaseMode('3d')}
+              >
+                <span>🔄 3D Hologram</span>
+                <span className="pill-badge">360°</span>
+              </button>
+            </div>
+
+            {/* Showcase Stage */}
+            <div className="showcase-content-area">
+              {showcaseMode === 'hanging' ? (
+                <div className="hanging-card-hero-stage">
+                  <HangingIdCard
+                    name="Harshavardhan"
+                    role="CSE • 4th Year"
+                    badgeId="21B91A0582"
+                    accentColor="#0284c7"
+                    ropeLength={115}
+                    ropeColor="#0f172a"
+                  />
+                </div>
+              ) : (
+                <DigitalIDShowcase />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>

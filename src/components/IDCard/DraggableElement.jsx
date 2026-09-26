@@ -191,6 +191,11 @@ export default function DraggableElement({
         userSelect: isEditing ? 'text' : 'none',
         WebkitUserSelect: isEditing ? 'text' : 'none'
       }}
+      onPointerDown={(e) => {
+        if (e.button === 0 && !isEditing) {
+          onSelect(element.id);
+        }
+      }}
       onMouseDown={handleMouseDown}
       onClick={(e) => {
         e.stopPropagation();

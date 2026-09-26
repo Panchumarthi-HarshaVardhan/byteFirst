@@ -38,6 +38,53 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
   const [activeGuides, setActiveGuides] = useState(null);
   const [inlineEditingId, setInlineEditingId] = useState(null);
 
+  const lastSelectTimeRef = useRef(0);
+  const isPointerDownOnElementRef = useRef(false);
+
+  // Safe handler to select an element and remember timestamp
+  const handleSelectElement = (id) => {
+    lastSelectTimeRef.current = Date.now();
+    isPointerDownOnElementRef.current = true;
+    onSelectElement(id);
+    if (inlineEditingId && inlineEditingId !== id) {
+      setInlineEditingId(null);
+    }
+    setTimeout(() => {
+      isPointerDownOnElementRef.current = false;
+    }, 250);
+  };
+
+  const handleBackgroundClick = (e) => {
+    // If the click is inside a canvas element or floating toolbar, ignore
+    if (
+      e.target.closest('[data-canvas-element="true"]') ||
+      e.target.closest('[data-floating-toolbar="true"]')
+    ) {
+      return;
+    }
+    // If pointer was pressed down on an element or selected within last 250ms, do not deselect!
+    if (isPointerDownOnElementRef.current || Date.now() - lastSelectTimeRef.current < 250) {
+      return;
+    }
+    onSelectElement(null);
+    setInlineEditingId(null);
+  };
+
+  const handlePointerDown = (e) => {
+    if (
+      e.target.closest('[data-canvas-element="true"]') ||
+      e.target.closest('[data-floating-toolbar="true"]')
+    ) {
+      isPointerDownOnElementRef.current = true;
+      lastSelectTimeRef.current = Date.now();
+      setTimeout(() => {
+        isPointerDownOnElementRef.current = false;
+      }, 250);
+    } else {
+      isPointerDownOnElementRef.current = false;
+    }
+  };
+
   const orientation = design?.card?.orientation || 'horizontal';
   const { width: cardWidth, height: cardHeight } = CANVAS_DIMENSIONS[orientation] || CANVAS_DIMENSIONS.horizontal;
 
@@ -496,15 +543,8 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
   return (
     <div
       className="flex flex-col items-center justify-center w-full h-full min-h-0 canvas-empty-workspace"
-      onClick={(e) => {
-        if (
-          !e.target.closest('[data-canvas-element="true"]') &&
-          !e.target.closest('[data-floating-toolbar="true"]')
-        ) {
-          onSelectElement(null);
-          setInlineEditingId(null);
-        }
-      }}
+      onPointerDownCapture={handlePointerDown}
+      onClick={handleBackgroundClick}
     >
       {/* Visual Canvas Scaler Container */}
       <div
@@ -540,15 +580,8 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                 borderColor: design?.card?.borderColor || '#93c5fd',
                 borderWidth: `${design?.card?.borderWidth || 1}px`
               }}
-              onClick={(e) => {
-                if (
-                  !e.target.closest('[data-canvas-element="true"]') &&
-                  !e.target.closest('[data-floating-toolbar="true"]')
-                ) {
-                  onSelectElement(null);
-                  setInlineEditingId(null);
-                }
-              }}
+              onPointerDownCapture={handlePointerDown}
+              onClick={handleBackgroundClick}
             >
               {/* Lanyard punch slot */}
               <div className="absolute top-1.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
@@ -576,12 +609,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                     canvasScale={canvasScale}
                     cardWidth={cardWidth}
                     cardHeight={cardHeight}
-                    onSelect={(id) => {
-                      onSelectElement(id);
-                      if (inlineEditingId && inlineEditingId !== id) {
-                        setInlineEditingId(null);
-                      }
-                    }}
+                    onSelect={handleSelectElement}
                     onChange={onUpdateElement}
                     onDragStateChange={handleDragStateChange}
                     onDoubleClick={(elemId) => {

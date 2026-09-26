@@ -10,7 +10,7 @@ import DesignEditor from './pages/DesignEditor';
 export default function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/byteFirst/">
         <AgentProvider>
           <Routes>
             {/* 1. Landing Page (Pure showcase & presentation) */}
@@ -34,4 +34,3 @@ export default function App() {
     </ThemeProvider>
   );
 }
-

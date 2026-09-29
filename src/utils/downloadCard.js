@@ -1,52 +1,61 @@
 import { toPng } from 'html-to-image';
 
 /**
- * Downloads the Digital ID Card as a high-resolution PNG image in its natural,
- * flat, un-mirrored orientation.
+ * Downloads a side of the ID card (front or back) as a high-resolution PNG image.
+ * Strips away selection rings, resize handles, floating toolbars, and guides.
+ * Renders in natural flat, un-mirrored orientation.
  *
- * Strips away any selection rings, resize handles, floating toolbars, and alignment guides.
- *
- * @param {HTMLElement} element - The DOM element of the ID card or its front face
- * @param {string} fileName - The desired download filename
+ * @param {HTMLElement|string} elementOrSide - Target element or 'front' | 'back'
+ * @param {string} fileName - Desired output filename
  * @returns {Promise<boolean>}
  */
-export const downloadCardAsImage = async (element, fileName = 'student-id-card.png') => {
-  if (!element) {
-    throw new Error('ID card element not found');
+export const downloadCardAsImage = async (elementOrSide = 'front', fileName = 'student-id-card.png') => {
+  let target;
+  if (typeof elementOrSide === 'string') {
+    target = document.getElementById(elementOrSide === 'back' ? 'downloadable-id-card-back' : 'downloadable-id-card');
+  } else if (elementOrSide && elementOrSide.nodeType) {
+    if (elementOrSide.id === 'downloadable-id-card' || elementOrSide.id === 'downloadable-id-card-back') {
+      target = elementOrSide;
+    } else {
+      target = elementOrSide.querySelector('#downloadable-id-card') ||
+               elementOrSide.querySelector('#downloadable-id-card-back') ||
+               elementOrSide;
+    }
+  } else {
+    target = document.getElementById('downloadable-id-card');
   }
 
-  // Identify the canonical front card element (single source of truth)
-  const target = element.id === 'downloadable-id-card'
-    ? element
-    : (element.querySelector('#downloadable-id-card') || element);
+  if (!target) {
+    throw new Error('ID card element not found for export');
+  }
 
+  const isBack = target.id === 'downloadable-id-card-back' || target.classList.contains('id-card-back');
   const isHorizontal = target.style.width === '600px' ||
     target.classList.contains('face-horizontal') ||
     target.classList.contains('horizontal') ||
     (target.closest && target.closest('.orientation-horizontal') !== null);
 
-  // Exact standard dimensions matching design ratio
   const cardWidth = isHorizontal ? 600 : 380;
   const cardHeight = isHorizontal ? 380 : 600;
 
   // Create temporary export clone
   const exportClone = target.cloneNode(true);
 
-  // Strip away any 3D back-face elements that might have been cloned
-  exportClone.querySelectorAll('.id-card-back, .rotate-y-180').forEach((el) => el.remove());
+  // If exporting front, strip away back face elements if any
+  if (!isBack) {
+    exportClone.querySelectorAll('.id-card-back, .rotate-y-180').forEach((el) => el.remove());
+  }
 
-  // Strip away selection outlines, resize handles, toolbars, and alignment guides
+  // Strip away selection outlines and resize handles
   exportClone.querySelectorAll('[class*="ring-2"], [class*="ring-1"]').forEach((el) => {
     el.className = el.className.replace(/ring-[^\s]+/g, '').replace(/shadow-[^\s]+/g, '');
   });
   exportClone.querySelectorAll('[class*="cursor-nwse-resize"], [class*="cursor-nesw-resize"]').forEach((el) => el.remove());
-  exportClone.querySelectorAll('[class*="z-\\[100\\]"]').forEach((el) => el.remove());
-  exportClone.querySelectorAll('[class*="pointer-events-none absolute inset-0"]').forEach((el) => el.remove());
+  exportClone.querySelectorAll('[data-floating-toolbar="true"]').forEach((el) => el.remove());
+  exportClone.querySelectorAll('[class*="alignment-guide"]').forEach((el) => el.remove());
 
-  // Apply dedicated export-safe class
+  // Enforce flat, un-mirrored layout on the clone
   exportClone.classList.add('id-card-export');
-
-  // Explicitly enforce flat, un-mirrored layout on the clone
   exportClone.style.transform = 'none';
   exportClone.style.perspective = 'none';
   exportClone.style.transformStyle = 'flat';
@@ -60,6 +69,7 @@ export const downloadCardAsImage = async (element, fileName = 'student-id-card.p
   exportClone.style.margin = '0';
   exportClone.style.animation = 'none';
   exportClone.style.transition = 'none';
+  exportClone.style.pointerEvents = 'none';
 
   // Inherit all active theme CSS variables from the live element
   const computed = window.getComputedStyle(target);
@@ -79,16 +89,16 @@ export const downloadCardAsImage = async (element, fileName = 'student-id-card.p
     }
   });
 
-  // Create off-screen sandbox container attached to DOM
+  // Offscreen sandbox container within visible compositor bounds
   const container = document.createElement('div');
   container.className = 'id-card-export-sandbox';
   container.style.position = 'fixed';
-  container.style.left = '-99999px';
+  container.style.left = '0';
   container.style.top = '0';
   container.style.width = `${cardWidth}px`;
   container.style.height = `${cardHeight}px`;
   container.style.overflow = 'hidden';
-  container.style.zIndex = '-99999';
+  container.style.zIndex = '-9999';
   container.style.opacity = '1';
   container.style.pointerEvents = 'none';
   container.style.background = 'transparent';
@@ -97,7 +107,6 @@ export const downloadCardAsImage = async (element, fileName = 'student-id-card.p
   document.body.appendChild(container);
 
   try {
-    // Generate high-resolution image with 3x pixel ratio
     const dataUrl = await toPng(exportClone, {
       quality: 0.98,
       pixelRatio: 3,
@@ -122,14 +131,49 @@ export const downloadCardAsImage = async (element, fileName = 'student-id-card.p
 
     return true;
   } catch (error) {
-    console.error('Error generating card image:', error);
-    throw error;
+    console.warn('First render attempt error, retrying with fallback settings:', error);
+    try {
+      const dataUrl = await toPng(exportClone, {
+        quality: 0.98,
+        pixelRatio: 3,
+        cacheBust: true,
+        skipFonts: true,
+        width: cardWidth,
+        height: cardHeight,
+        style: {
+          transform: 'none',
+          margin: '0',
+          boxShadow: 'none',
+          borderRadius: '16px'
+        }
+      });
+      const link = document.createElement('a');
+      link.download = fileName;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      return true;
+    } catch (fallbackError) {
+      console.error('Fallback generation also failed:', fallbackError);
+      throw error;
+    }
   } finally {
-    // Always clean up the temporary export clone
     if (container.parentNode) {
       container.parentNode.removeChild(container);
     }
   }
+};
+
+/**
+ * Downloads both front and back sides sequentially
+ */
+export const downloadBothSides = async (baseName = 'student') => {
+  const cleanName = baseName.toLowerCase().replace(/\s+/g, '-');
+  await downloadCardAsImage('front', `${cleanName}-id-card-front.png`);
+  await new Promise((r) => setTimeout(r, 600));
+  await downloadCardAsImage('back', `${cleanName}-id-card-back.png`);
+  return true;
 };
 
 /**

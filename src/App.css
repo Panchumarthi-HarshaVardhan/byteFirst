@@ -1770,6 +1770,20 @@
   display: block;
 }
 
+.signature-sub {
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: var(--slate-400);
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.signature-svg {
+  display: inline-block;
+  margin-bottom: 2px;
+}
+
 .card-bottom-accent-bar {
   height: 5px;
   background: linear-gradient(90deg, var(--theme-primary) 0%, var(--theme-secondary) 50%, var(--theme-accent) 100%);
@@ -2756,7 +2770,8 @@
   .id-card-preview-wrapper,
   .id-card-perspective-container,
   .id-card-visual,
-  .id-card-root {
+  .id-card-root,
+  .canvas-empty-workspace {
     display: none !important;
     visibility: hidden !important;
     height: 0 !important;
@@ -2778,6 +2793,8 @@
     position: static !important;
     width: 100% !important;
     height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     border: none !important;

@@ -274,8 +274,8 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
                 <span className="text-[9px] font-bold tracking-wider mt-0.5">PHOTO</span>
               </div>
             )}
-            <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-black/60 text-emerald-400 backdrop-blur-xs flex items-center gap-0.5 border border-white/20 pointer-events-none">
-              <ShieldCheck size={9} />
+            <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[8px] font-extrabold bg-slate-950/85 text-emerald-400 backdrop-blur-xs flex items-center gap-1 border border-white/20 pointer-events-none shadow-xs whitespace-nowrap">
+              <ShieldCheck size={10} className="text-emerald-400" />
               <span>VERIFIED</span>
             </div>
           </div>
@@ -293,7 +293,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
               autoFocus
               className="w-full h-full bg-blue-500/10 border-b-2 border-blue-600 outline-none px-1 select-text"
               style={{
-                fontSize: `${el.fontSize || 20}px`,
+                fontSize: `${el.fontSize || 18}px`,
                 fontWeight: el.fontWeight || '900',
                 color: el.color || '#0f172a',
                 fontStyle: el.fontStyle || 'normal',
@@ -308,7 +308,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
           <h3
             className="w-full h-full truncate leading-tight select-none"
             style={{
-              fontSize: `${el.fontSize || 20}px`,
+              fontSize: `${displayName.length > 22 ? Math.max(13, (el.fontSize || 18) - 3) : el.fontSize || 18}px`,
               fontWeight: el.fontWeight || '900',
               color: el.color || '#0f172a',
               fontStyle: el.fontStyle || 'normal',
@@ -322,7 +322,7 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
       case 'rollNumber':
         if (inlineEditingId === 'rollNumber') {
           return (
-            <div className="w-full h-full flex items-center">
+            <div className="w-full h-full flex items-center justify-center">
               <span
                 className="px-2 py-0.5 rounded-md font-mono font-bold tracking-wider border shadow-2xs flex items-center gap-1 select-text"
                 style={{
@@ -350,7 +350,12 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
           );
         }
         return (
-          <div className="w-full h-full flex items-center">
+          <div
+            className="w-full h-full flex items-center"
+            style={{
+              justifyContent: el.textAlign === 'center' ? 'center' : (el.textAlign === 'right' ? 'flex-end' : 'flex-start')
+            }}
+          >
             <span
               className="px-2.5 py-0.5 rounded-md font-mono font-bold tracking-wider border shadow-2xs select-none"
               style={{
@@ -390,9 +395,9 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
         }
         return (
           <div
-            className="w-full h-full truncate select-none"
+            className="w-full h-full truncate select-none leading-snug"
             style={{
-              fontSize: `${el.fontSize || 12}px`,
+              fontSize: `${displayBranch.length > 28 ? Math.max(10, (el.fontSize || 12) - 2) : el.fontSize || 12}px`,
               fontWeight: el.fontWeight || '700',
               color: el.color || '#1e3a8a',
               fontStyle: el.fontStyle || 'normal',
@@ -510,13 +515,18 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
 
       case 'signature':
         return (
-          <div className="w-full h-full flex flex-col items-center justify-end select-none">
-            <span className="font-serif italic text-sm text-slate-800 tracking-wide">
-              {student.fullName ? student.fullName.slice(0, 15) : 'H. Vardhan'}
-            </span>
-            <div className="w-full border-b border-slate-400 my-0.5" />
-            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">
+          <div className="w-full h-full flex flex-col items-center justify-end select-none pointer-events-none">
+            <div className="flex items-center justify-center h-6 mb-0.5">
+              <svg viewBox="0 0 120 30" className="w-24 h-5.5 text-slate-800 dark:text-slate-200 fill-none stroke-current stroke-[1.8] stroke-linecap-round stroke-linejoin-round">
+                <path d="M 8 18 C 16 6, 22 4, 28 12 C 34 20, 38 22, 46 10 C 50 4, 56 8, 62 16 M 58 12 C 68 6, 80 10, 92 8 M 76 4 Q 84 22 96 14 T 112 10" />
+              </svg>
+            </div>
+            <div className="w-full border-b border-slate-400/80 my-0.5" />
+            <span className="text-[8px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider leading-none">
               Authorized Signatory
+            </span>
+            <span className="text-[7px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest leading-tight mt-0.5">
+              Registrar
             </span>
           </div>
         );
@@ -566,165 +576,339 @@ const IDCardCanvas = forwardRef(function IDCardCanvas(
           }}
           className="absolute top-0 left-0"
         >
-          {/* Card Face: Mutually exclusive Front or Back rendering to completely prevent ghosting/overlap */}
-          {!isFlipped ? (
-            /* FRONT FACE (Interactive Design Canvas) */
+          {/* 3D Perspective Card Flip Container */}
+          <div
+            style={{
+              width: `${cardWidth}px`,
+              height: `${cardHeight}px`,
+              perspective: '1200px'
+            }}
+            className="relative w-full h-full"
+          >
+            {/* 3D Rotating Card Body (Both faces live inside here) */}
             <div
-              ref={ref}
-              id="downloadable-id-card"
-              className="relative w-full h-full rounded-2xl overflow-hidden shadow-card border select-none font-sans"
               style={{
                 width: `${cardWidth}px`,
                 height: `${cardHeight}px`,
-                backgroundColor: design?.card?.background || '#ffffff',
-                borderColor: design?.card?.borderColor || '#93c5fd',
-                borderWidth: `${design?.card?.borderWidth || 1}px`
+                transformStyle: 'preserve-3d',
+                transition: 'transform 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
               }}
-              onPointerDownCapture={handlePointerDown}
-              onClick={handleBackgroundClick}
+              className="relative w-full h-full rounded-2xl shadow-card"
             >
-              {/* Lanyard punch slot */}
-              <div className="absolute top-1.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-                <span className="w-12 h-2 rounded-full bg-slate-900/30 border border-white/20 inline-block shadow-inner" />
-              </div>
-
-              {/* Header Banner */}
+              {/* ================= CARD FRONT FACE ================= */}
               <div
-                data-card-bg="true"
-                className="w-full h-18 relative z-0 shadow-sm transition-colors duration-200"
-                style={{ background: design?.card?.headerBg || 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)' }}
-              />
+                ref={ref}
+                id="downloadable-id-card"
+                className={`absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-card border select-none font-sans ${
+                  isFlipped ? 'pointer-events-none' : ''
+                }`}
+                style={{
+                  width: `${cardWidth}px`,
+                  height: `${cardHeight}px`,
+                  backgroundColor: design?.card?.background || '#ffffff',
+                  borderColor: design?.card?.borderColor || '#93c5fd',
+                  borderWidth: `${design?.card?.borderWidth || 1}px`,
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                  transform: 'rotateY(0deg)',
+                  zIndex: isFlipped ? 0 : 2
+                }}
+                onPointerDownCapture={handlePointerDown}
+                onClick={handleBackgroundClick}
+              >
+                {/* Lanyard punch slot */}
+                <div className="absolute top-1 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                  <span className="w-6 h-0.5 rounded-full bg-slate-900/40 border border-white/20 inline-block shadow-inner" />
+                </div>
 
-              {/* Decorative Subtle Background Pattern */}
-              <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:14px_14px]" />
+                {/* Header Banner */}
+                <div
+                  data-card-bg="true"
+                  className="w-full absolute top-0 left-0 right-0 z-0 shadow-sm transition-colors duration-200"
+                  style={{
+                    height: `${orientation === 'vertical' ? 66 : 70}px`,
+                    background: design?.card?.headerBg || 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%)'
+                  }}
+                />
 
-              {/* All Movable Design Elements */}
-              {design?.elements &&
-                Object.entries(design.elements).map(([key, el]) => (
-                  <DraggableElement
-                    key={key}
-                    element={el}
-                    isSelected={!isExportMode && selectedElementId === key}
-                    isEditing={inlineEditingId === key}
-                    canvasScale={canvasScale}
+                {/* Decorative Subtle Background Pattern */}
+                <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:14px_14px]" />
+
+                {/* All Movable Design Elements */}
+                {design?.elements &&
+                  Object.entries(design.elements).map(([key, el]) => (
+                    <DraggableElement
+                      key={key}
+                      element={el}
+                      isSelected={!isExportMode && !isFlipped && selectedElementId === key}
+                      isEditing={inlineEditingId === key}
+                      canvasScale={canvasScale}
+                      cardWidth={cardWidth}
+                      cardHeight={cardHeight}
+                      onSelect={handleSelectElement}
+                      onChange={onUpdateElement}
+                      onDragStateChange={handleDragStateChange}
+                      onDoubleClick={(elemId) => {
+                        if (elemId === 'studentPhoto') {
+                          if (onFocusField) onFocusField('studentPhoto');
+                          return;
+                        }
+                        if (elemId === 'collegeEmblem') {
+                          if (onFocusField) onFocusField('collegeEmblem');
+                          return;
+                        }
+                        const elementObj = design?.elements?.[elemId];
+                        if (elementObj?.type === 'text' || elementObj?.type === 'badge') {
+                          setInlineEditingId(elemId);
+                        }
+                      }}
+                    >
+                      {renderElementContent(key, el)}
+                    </DraggableElement>
+                  ))}
+
+                {/* Alignment and Snap Guides */}
+                {!isExportMode && !isFlipped && (
+                  <AlignmentGuides
+                    activeGuides={activeGuides}
                     cardWidth={cardWidth}
                     cardHeight={cardHeight}
-                    onSelect={handleSelectElement}
-                    onChange={onUpdateElement}
-                    onDragStateChange={handleDragStateChange}
-                    onDoubleClick={(elemId) => {
-                      if (elemId === 'studentPhoto') {
-                        if (onFocusField) onFocusField('studentPhoto');
-                        return;
-                      }
-                      if (elemId === 'collegeEmblem') {
-                        if (onFocusField) onFocusField('collegeEmblem');
-                        return;
-                      }
-                      const elementObj = design?.elements?.[elemId];
-                      if (elementObj?.type === 'text' || elementObj?.type === 'badge') {
-                        setInlineEditingId(elemId);
-                      }
-                    }}
-                  >
-                    {renderElementContent(key, el)}
-                  </DraggableElement>
-                ))}
+                  />
+                )}
 
-              {/* Alignment and Snap Guides */}
-              {!isExportMode && (
-                <AlignmentGuides
-                  activeGuides={activeGuides}
-                  cardWidth={cardWidth}
-                  cardHeight={cardHeight}
+                {/* Bottom Decorative Accent Bar */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-1.5 z-20 pointer-events-none"
+                  style={{ backgroundColor: design?.card?.accentColor || '#38bdf8' }}
                 />
-              )}
-
-              {/* Bottom Decorative Accent Bar */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-1.5 z-20 pointer-events-none"
-                style={{ backgroundColor: design?.card?.accentColor || '#38bdf8' }}
-              />
-            </div>
-          ) : (
-            /* BACK FACE (Interactive Back View) */
-            <div
-              className="relative w-full h-full rounded-2xl overflow-hidden shadow-card border select-none font-sans flex flex-col justify-between"
-              style={{
-                width: `${cardWidth}px`,
-                height: `${cardHeight}px`,
-                backgroundColor: design?.card?.background || '#ffffff',
-                borderColor: design?.card?.borderColor || '#93c5fd',
-                borderWidth: `${design?.card?.borderWidth || 1}px`
-              }}
-            >
-              {/* Top Magnetic / Security Stripe */}
-              <div className="w-full h-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
-                <div className="w-10 h-2 rounded bg-slate-700/60" />
-                <span className="text-[9px] tracking-widest text-slate-400 font-mono">
-                  SECURITY VERIFIED • INSTITUTIONAL CREDENTIAL
-                </span>
-                <div className="w-10 h-2 rounded bg-slate-700/60" />
               </div>
 
-              {/* Back Information & Directives */}
-              <div className="p-4 flex-1 flex flex-col justify-between text-xs">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Heart size={12} className="text-rose-500 fill-rose-500 shrink-0" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase w-20">Blood Group:</span>
-                    <span className="text-[11px] font-bold text-slate-800 font-mono">{displayBlood}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Phone size={12} className="text-blue-500 shrink-0" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase w-20">Helpline:</span>
-                    <span className="text-[11px] font-medium text-slate-700 font-mono">{displayPhone}</span>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <MapPin size={12} className="text-blue-500 shrink-0 mt-0.5" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase w-20">Campus:</span>
-                    <span className="text-[10px] font-medium text-slate-600 line-clamp-1">{displayAddress}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Calendar size={12} className="text-blue-500 shrink-0" />
-                    <span className="text-[10px] text-slate-500 font-bold uppercase w-20">Validity:</span>
-                    <span className="text-[10px] font-medium text-slate-700">Issued: Aug 2024 • Valid: Jun 2028</span>
-                  </div>
-                </div>
-
-                {/* Terms and Conditions block */}
-                <div className="p-2.5 rounded-lg bg-black/5 border border-black/10 text-[8px] leading-relaxed text-slate-600">
-                  <span className="font-bold text-slate-800 block mb-0.5">TERMS & CONDITIONS:</span>
-                  <ol className="list-decimal pl-3 space-y-0.5">
-                    <li>This credential is non-transferable and remains property of {displayCollege}.</li>
-                    <li>Report loss immediately to the Academic Registrar office.</li>
-                    <li>Mandatory for campus, examination halls, library, and laboratory access.</li>
-                  </ol>
-                </div>
-
-                {/* Barcode section */}
-                <div className="bg-white p-2 rounded border border-slate-200 flex flex-col items-center justify-center shadow-2xs">
-                  <div className="w-full h-6 flex items-stretch justify-center gap-[2px] overflow-hidden">
-                    {[2, 1, 3, 4, 1, 2, 4, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3, 2, 1, 3, 2, 4, 1].map((w, i) => (
-                      <div key={i} className="bg-slate-900" style={{ width: `${w}px` }} />
-                    ))}
-                  </div>
-                  <span className="text-[8px] font-mono font-bold tracking-wider text-slate-700 mt-0.5">
-                    *{displayRoll}*
+              {/* ================= CARD BACK FACE ================= */}
+              <div
+                id="downloadable-id-card-back"
+                className={`absolute inset-0 w-full h-full rounded-2xl overflow-hidden shadow-card border select-none font-sans flex flex-col justify-between ${
+                  !isFlipped ? 'pointer-events-none' : ''
+                }`}
+                style={{
+                  width: `${cardWidth}px`,
+                  height: `${cardHeight}px`,
+                  backgroundColor: design?.card?.background || '#ffffff',
+                  borderColor: design?.card?.borderColor || '#93c5fd',
+                  borderWidth: `${design?.card?.borderWidth || 1}px`,
+                  backfaceVisibility: 'hidden',
+                  WebkitBackfaceVisibility: 'hidden',
+                  transform: 'rotateY(180deg)',
+                  zIndex: isFlipped ? 2 : 0
+                }}
+              >
+                {/* Top Magnetic / Security Stripe */}
+                <div className="w-full h-8 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 shrink-0">
+                  <div className="w-8 h-1.5 rounded bg-slate-700/60" />
+                  <span className="text-[9px] tracking-widest text-slate-300 font-mono font-bold">
+                    SECURITY VERIFIED • INSTITUTIONAL CREDENTIAL
                   </span>
+                  <div className="w-8 h-1.5 rounded bg-slate-700/60" />
                 </div>
-              </div>
 
-              {/* Bottom Accent Bar */}
-              <div
-                className="h-1.5 w-full shrink-0"
-                style={{ backgroundColor: design?.card?.accentColor || '#38bdf8' }}
-              />
+                {/* Back Information & Directives (Adapts cleanly to Vertical or Horizontal) */}
+                {orientation === 'vertical' ? (
+                  /* VERTICAL BACK LAYOUT */
+                  <div className="p-3.5 flex-1 flex flex-col justify-between text-xs overflow-hidden">
+                    {/* Institution Header with Logo */}
+                    <div className="flex items-center gap-2.5 pb-2 border-b border-slate-200">
+                      <div className="w-8 h-8 rounded-full bg-blue-600/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+                        {student.logoUrl ? (
+                          <img src={student.logoUrl} alt="Logo" className="w-full h-full object-contain p-0.5" />
+                        ) : (
+                          <GraduationCap size={18} className="text-blue-600" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="text-[11px] font-extrabold text-slate-900 uppercase truncate leading-tight">
+                          {displayCollege}
+                        </h4>
+                        <span className="text-[8px] font-semibold text-slate-500 uppercase tracking-wider block">
+                          DIRECTORATE OF ACADEMIC AFFAIRS
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Student Identification Summary */}
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
+                      <div className="flex items-center justify-between text-[9.5px]">
+                        <span className="text-slate-500 font-bold uppercase">NAME:</span>
+                        <span className="font-extrabold text-slate-900 uppercase truncate max-w-[210px]">{displayName}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9.5px]">
+                        <span className="text-slate-500 font-bold uppercase">ROLL NO:</span>
+                        <span className="font-mono font-black text-blue-700">{displayRoll}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9.5px]">
+                        <span className="text-slate-500 font-bold uppercase">BRANCH:</span>
+                        <span className="font-bold text-slate-700 truncate max-w-[210px]">{displayBranch}</span>
+                      </div>
+                    </div>
+
+                    {/* Medical & Emergency Grid */}
+                    <div className="space-y-1.5 py-0.5">
+                      <div className="flex items-center gap-2">
+                        <Heart size={12} className="text-rose-500 fill-rose-500 shrink-0" />
+                        <span className="text-[9.5px] text-slate-500 font-bold uppercase w-20">Blood Group:</span>
+                        <span className="text-[10px] font-black text-rose-600 font-mono">{displayBlood}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone size={12} className="text-blue-500 shrink-0" />
+                        <span className="text-[9.5px] text-slate-500 font-bold uppercase w-20">Helpline:</span>
+                        <span className="text-[10px] font-bold text-slate-800 font-mono">{displayPhone}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <MapPin size={12} className="text-blue-500 shrink-0 mt-0.5" />
+                        <span className="text-[9.5px] text-slate-500 font-bold uppercase w-20">Address:</span>
+                        <span className="text-[9.5px] font-medium text-slate-600 line-clamp-1">{displayAddress}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={12} className="text-blue-500 shrink-0" />
+                        <span className="text-[9.5px] text-slate-500 font-bold uppercase w-20">Validity:</span>
+                        <span className="text-[9.5px] font-semibold text-slate-700">Aug 2024 – Jun 2028</span>
+                      </div>
+                    </div>
+
+                    {/* Terms and Conditions block */}
+                    <div className="p-2 rounded-lg bg-black/5 border border-black/10 text-[7.5px] leading-relaxed text-slate-600">
+                      <span className="font-extrabold text-slate-800 block mb-0.5">TERMS & CONDITIONS:</span>
+                      <ol className="list-decimal pl-3 space-y-0.5">
+                        <li>This credential remains property of {displayCollege} and is non-transferable.</li>
+                        <li>Report loss immediately to the Academic Registrar office.</li>
+                        <li>Mandatory for campus access, examinations, library, and laboratory entry.</li>
+                        <li>If found, please return to the Registrar Office or security control room.</li>
+                      </ol>
+                    </div>
+
+                    {/* Footer Barcode & Fixed Registrar Signatory */}
+                    <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-200">
+                      <div className="flex flex-col items-center">
+                        <div className="h-5 flex items-stretch gap-[2px]">
+                          {[2, 1, 3, 4, 1, 2, 4, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3, 2].map((w, i) => (
+                            <div key={i} className="bg-slate-900" style={{ width: `${w}px` }} />
+                          ))}
+                        </div>
+                        <span className="text-[7.5px] font-mono font-bold tracking-wider text-slate-700 mt-0.5">
+                          *{displayRoll}*
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-center text-center">
+                        <svg viewBox="0 0 100 24" className="w-18 h-4.5 text-slate-800 fill-none stroke-current stroke-[1.6] stroke-linecap-round stroke-linejoin-round">
+                          <path d="M 6 16 C 14 6, 20 4, 24 12 C 30 18, 34 20, 42 10 C 46 6, 52 8, 56 14 M 52 12 C 60 6, 70 10, 80 8 M 68 4 Q 74 18 84 12 T 96 10" />
+                        </svg>
+                        <div className="w-20 border-b border-slate-400 my-0.5" />
+                        <span className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider">
+                          Registrar
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* HORIZONTAL BACK LAYOUT (2 Columns) */
+                  <div className="p-4 flex-1 grid grid-cols-12 gap-3 text-xs overflow-hidden items-stretch">
+                    {/* Left Column (Col 1-7) */}
+                    <div className="col-span-7 flex flex-col justify-between space-y-1.5 border-r border-slate-200 pr-3">
+                      {/* Institution Header */}
+                      <div className="flex items-center gap-2 pb-1.5 border-b border-slate-200">
+                        <div className="w-7 h-7 rounded-full bg-blue-600/10 border border-blue-500/30 flex items-center justify-center shrink-0">
+                          {student.logoUrl ? (
+                            <img src={student.logoUrl} alt="Logo" className="w-full h-full object-contain p-0.5" />
+                          ) : (
+                            <GraduationCap size={15} className="text-blue-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-[10.5px] font-extrabold text-slate-900 uppercase truncate leading-tight">
+                            {displayCollege}
+                          </h4>
+                          <span className="text-[7.5px] font-semibold text-slate-500 uppercase tracking-wider block">
+                            DIRECTORATE OF ACADEMIC AFFAIRS
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Emergency & Address Details */}
+                      <div className="space-y-1 text-[9px]">
+                        <div className="flex items-center gap-2">
+                          <Heart size={10} className="text-rose-500 fill-rose-500 shrink-0" />
+                          <span className="text-slate-500 font-bold uppercase w-16">Blood:</span>
+                          <span className="font-black text-rose-600 font-mono">{displayBlood}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone size={10} className="text-blue-500 shrink-0" />
+                          <span className="text-slate-500 font-bold uppercase w-16">Helpline:</span>
+                          <span className="font-bold text-slate-800 font-mono">{displayPhone}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <MapPin size={10} className="text-blue-500 shrink-0 mt-0.5" />
+                          <span className="text-slate-500 font-bold uppercase w-16">Campus:</span>
+                          <span className="font-medium text-slate-600 truncate">{displayAddress}</span>
+                        </div>
+                      </div>
+
+                      {/* Terms and conditions */}
+                      <div className="p-1.5 rounded bg-black/5 border border-black/10 text-[7px] leading-tight text-slate-600">
+                        <span className="font-bold text-slate-800 block mb-0.5">TERMS & CONDITIONS:</span>
+                        <ol className="list-decimal pl-2.5 space-y-0.5">
+                          <li>Non-transferable property of {displayCollege}.</li>
+                          <li>Report loss immediately to Academic Registrar.</li>
+                          <li>Mandatory for campus, exam, lab & library access.</li>
+                        </ol>
+                      </div>
+                    </div>
+
+                    {/* Right Column (Col 8-12): QR + Barcode + Signature */}
+                    <div className="col-span-5 flex flex-col justify-between items-center text-center pl-1">
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white p-1 rounded border border-slate-200 shadow-2xs">
+                          <QRCodeSVG value={qrPayload} size={58} level="M" />
+                        </div>
+                        <span className="text-[7.5px] font-bold text-slate-500 tracking-wider uppercase mt-1">
+                          SCAN TO VERIFY
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-center w-full">
+                        <div className="h-4.5 flex items-stretch gap-[2px]">
+                          {[2, 1, 3, 4, 1, 2, 4, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3].map((w, i) => (
+                            <div key={i} className="bg-slate-900" style={{ width: `${w}px` }} />
+                          ))}
+                        </div>
+                        <span className="text-[7px] font-mono font-bold tracking-wider text-slate-700 mt-0.5">
+                          *{displayRoll}*
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col items-center w-full">
+                        <svg viewBox="0 0 100 24" className="w-20 h-4.5 text-slate-800 fill-none stroke-current stroke-[1.6] stroke-linecap-round stroke-linejoin-round">
+                          <path d="M 6 16 C 14 6, 20 4, 24 12 C 30 18, 34 20, 42 10 C 46 6, 52 8, 56 14 M 52 12 C 60 6, 70 10, 80 8 M 68 4 Q 74 18 84 12 T 96 10" />
+                        </svg>
+                        <div className="w-24 border-b border-slate-400 my-0.5" />
+                        <span className="text-[7.5px] font-black text-slate-700 uppercase tracking-wider">
+                          Authorized Signatory
+                        </span>
+                        <span className="text-[6.5px] font-semibold text-slate-500 uppercase tracking-widest">
+                          Registrar
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Bottom Accent Bar */}
+                <div
+                  className="h-1.5 w-full shrink-0"
+                  style={{ backgroundColor: design?.card?.accentColor || '#38bdf8' }}
+                />
+              </div>
             </div>
-          )}
+          </div>
 
           {/* Canva / Figma Style FLOATING EDITING TOOLBAR */}
           {!isFlipped && !isExportMode && selectedElement && (

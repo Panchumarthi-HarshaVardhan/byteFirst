@@ -10,7 +10,8 @@ import Footer from '../components/Footer';
 import { CARD_THEMES } from '../data/themes';
 import { SAMPLE_STUDENTS } from '../data/sampleData';
 import { validateAllFields } from '../utils/validation';
-import { downloadCardAsImage, printCard } from '../utils/downloadCard';
+import { downloadCardAsImage, downloadBothSides, printCard } from '../utils/downloadCard';
+import { PrintDocument } from '../components/IDCard';
 import {
   CheckCircle2,
   Sparkles,
@@ -67,7 +68,7 @@ export default function CreateID() {
   const { updateSafeContext, registerHandlers, unregisterHandlers, openAgent } = useAgent();
   const [studentData, setStudentData] = useState(INITIAL_STUDENT_DATA);
   const [selectedTheme, setSelectedTheme] = useState(CARD_THEMES[0]);
-  const [cardOrientation, setCardOrientation] = useState('horizontal');
+  const [cardOrientation, setCardOrientation] = useState('vertical');
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGenerated, setIsGenerated] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -85,7 +86,7 @@ export default function CreateID() {
     canUndo,
     canRedo,
     resetDesign
-  } = useDesignHistory(getDefaultDesign('horizontal'));
+  } = useDesignHistory(getDefaultDesign('vertical'));
 
   const cardRef = useRef(null);
 
@@ -406,20 +407,22 @@ export default function CreateID() {
     showToast('ID Card verified successfully!');
   };
 
-  const handleDownload = async () => {
-    if (isFlipped) {
-      setIsFlipped(false);
-      await new Promise((r) => setTimeout(r, 400));
-    }
-
+  const handleDownload = async (side = 'auto') => {
     // Deselect element prior to snapshot
     setSelectedElementId(null);
     setIsDownloading(true);
 
     try {
-      const fileName = `${(studentData.fullName || 'student').toLowerCase().replace(/\s+/g, '-')}-id-card.png`;
-      await downloadCardAsImage(cardRef.current, fileName);
-      showToast('ID Card PNG downloaded successfully!');
+      const cleanName = (studentData.fullName || 'student').toLowerCase().replace(/\s+/g, '-');
+      if (side === 'both') {
+        await downloadBothSides(cleanName);
+        showToast('Both Front & Back ID cards downloaded!');
+      } else {
+        const isBack = side === 'back' || (side === 'auto' && isFlipped);
+        const fileName = `${cleanName}-id-card-${isBack ? 'back' : 'front'}.png`;
+        await downloadCardAsImage(isBack ? 'back' : 'front', fileName);
+        showToast(`ID Card ${isBack ? 'Back' : 'Front'} PNG downloaded!`);
+      }
     } catch (error) {
       console.error(error);
       showToast('Failed to download image. Please try again.');
@@ -722,6 +725,13 @@ export default function CreateID() {
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Dedicated Two-Page Front & Back Print Document */}
+      <PrintDocument
+        student={studentData}
+        theme={selectedTheme}
+        orientation={cardOrientation}
+      />
     </div>
   );
 }

@@ -133,10 +133,14 @@ export function CardFrontContent({
 
             <div className="auth-signature-block">
               <div className="signature-art">
-                <span className="scribble-text">H. Vardhan</span>
+                <svg width="68" height="24" viewBox="0 0 100 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="signature-svg">
+                  <path d="M4 24C14 10 24 6 32 16C40 26 44 8 54 12C64 16 68 30 76 20C82 12 90 14 96 18" stroke="#1e293b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M18 28C32 26 62 27 82 25" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+                </svg>
               </div>
               <div className="signature-rule"></div>
               <span className="signature-title">Authorized Signatory</span>
+              <span className="signature-sub">Registrar</span>
             </div>
           </div>
         )}
@@ -160,10 +164,14 @@ export function CardFrontContent({
 
           <div className="auth-signature-block">
             <div className="signature-art">
-              <span className="scribble-text">H. Vardhan</span>
+              <svg width="68" height="24" viewBox="0 0 100 36" fill="none" xmlns="http://www.w3.org/2000/svg" className="signature-svg">
+                <path d="M4 24C14 10 24 6 32 16C40 26 44 8 54 12C64 16 68 30 76 20C82 12 90 14 96 18" stroke="#1e293b" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M18 28C32 26 62 27 82 25" stroke="#1e293b" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
             </div>
             <div className="signature-rule"></div>
             <span className="signature-title">Authorized Signatory</span>
+            <span className="signature-sub">Registrar</span>
           </div>
         </div>
       )}
